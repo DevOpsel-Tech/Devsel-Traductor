@@ -23,6 +23,7 @@ test("creates a modified-reading PDF while preserving untouched pages", async ()
       page: 2,
       variantLabel: "español",
       text: "Texto sustituido.\nLínea añadida debajo. →",
+      layout: { fontSize: 12, left: 40, right: 380 },
     }],
     fontBytes,
   );

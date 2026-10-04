@@ -40,7 +40,9 @@ button:disabled {
 
 .library-dialog {
   max-height: 88vh;
-  overflow-y: auto;
+  overflow: hidden;
+  background: #fff;
+  color: #172033;
 }
 
 .centered-dialog {
@@ -55,7 +57,7 @@ button:disabled {
 }
 
 .centered-dialog::backdrop {
-  background: rgb(15 23 42 / 16%);
+  background: rgb(15 23 42 / 48%);
   backdrop-filter: none;
 }
 
@@ -190,18 +192,157 @@ button:disabled {
 
 .toolbar-button {
   display: inline-flex;
-  height: 34px;
-  min-width: 34px;
+  height: 28px;
+  min-width: 28px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #475569;
+  font-size: 13px;
   transition: background 120ms ease, color 120ms ease;
 }
 
 .toolbar-button:hover:not(:disabled) {
   background: #eef2ff;
   color: #3730a3;
+}
+
+/* Barra fina y coherente para los dos paneles (traducción y PDF original). */
+.reader-toolbar {
+  display: flex;
+  min-height: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  border-bottom: 1px solid #d1d5db;
+  background: #e5e7eb;
+  padding: 4px 12px;
+}
+
+.reader-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.reader-toolbar-separator {
+  width: 1px;
+  height: 18px;
+  background: #c3c7cc;
+  flex: 0 0 auto;
+}
+
+/* Iconos de las barras: en blanco, sobre chip gris ceniza. */
+.reader-toolbar .toolbar-button,
+.reader-toolbar .reader-zoom-value {
+  background: #9aa0a6;
+  color: #fff;
+}
+
+.reader-toolbar .toolbar-button:hover:not(:disabled),
+.reader-toolbar .reader-zoom-value:hover:not(:disabled) {
+  background: #6b7280;
+  color: #fff;
+}
+
+.reader-toolbar .toolbar-button:disabled,
+.reader-toolbar .reader-zoom-value:disabled {
+  background: #c6cacd;
+  color: #fff;
+}
+
+.reader-zoom-value {
+  height: 28px;
+  min-width: 44px;
+  border-radius: 7px;
+  padding: 0 6px;
+  color: #475569;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.reader-zoom-value:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.reader-page-input {
+  height: 28px;
+  width: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  text-align: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+/* Sin los "mini scroll" (spinners) del input numérico: la paginación
+   vive en la barra con sus flechas ‹ ›. */
+.reader-page-input[type="number"]::-webkit-inner-spin-button,
+.reader-page-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.reader-page-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.reader-page-input:focus {
+  border-color: #a5b4fc;
+}
+
+.reader-page-count {
+  color: #6b7280;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reader-status {
+  min-width: 0;
+  max-width: 220px;
+  flex: 1 1 80px;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-page-label {
+  color: #64748b;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.reader-actions {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.reader-actions .icon-button {
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+.reader-actions-separator {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: #e2e8f0;
+  flex: 0 0 auto;
 }
 
 .icon-button {
@@ -224,29 +365,195 @@ button:disabled {
   white-space: nowrap;
 }
 
-.header-action-library {
-  border-color: #c7d2fe !important;
-  background: #eef2ff;
-  color: #3730a3;
+.app-header {
+  gap: 12px;
+  background: #9aa0a6;
+  border-bottom: 1px solid #868c93;
 }
 
-.header-action-library:hover {
-  background: #e0e7ff;
+.header-logo {
+  background: #6b7280;
+  box-shadow: none;
+}
+
+.header-title {
+  color: #1f2937;
+}
+
+.header-subtitle {
+  color: #4b5563;
+}
+
+/* Botones del header: todos con el mismo tamaño y forma (gris ceniza). */
+.header-button {
+  min-height: 38px;
+  border: 1px solid #6b7280;
+  border-radius: 9px;
+  background: #e5e7eb;
+  color: #374151;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.header-button:hover:not(:disabled) {
+  background: #d1d5db;
+  border-color: #4b5563;
+  color: #1f2937;
+}
+
+.header-button:disabled {
+  background: #d6d9dd;
+  border-color: #b9bdc2;
+  color: #8a8f96;
+}
+
+.header-button-primary {
+  border-color: #4b5563;
+  background: #4b5563;
+  color: #f9fafb;
+}
+
+.header-button-primary:hover:not(:disabled) {
+  background: #374151;
+  border-color: #374151;
+  color: #ffffff;
+}
+
+.header-button-primary:disabled {
+  background: #b9bdc2;
+  border-color: #b9bdc2;
+  color: #f3f4f6;
+}
+
+/* Dos zonas centradas en el header, cada una sobre su panel:
+   - zona traducción (izquierda/centro, sobre el PDF generado)
+   - zona biblioteca (derecha, sobre el PDF original) */
+.header-zone-translate,
+.header-zone-library {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.header-zone-translate {
+  flex: 1 1 auto;
+}
+
+.header-zone-library {
+  flex: 1 1 auto;
+}
+
+.header-zone-translate .icon-button,
+.header-zone-library .icon-button {
+  min-height: 38px;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.header-zone-separator {
+  width: 1px;
+  height: 22px;
+  background: #6b7280;
+  flex: 0 0 auto;
+  margin: 0 4px;
+  opacity: 0.6;
+}
+
+@media (max-width: 1100px) {
+  .header-zone-translate .icon-button,
+  .header-zone-library .icon-button {
+    padding: 8px 9px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 62px;
+    row-gap: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .header-zone-translate,
+  .header-zone-library {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .header-zone-translate::-webkit-scrollbar,
+  .header-zone-library::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.header-action-library {
+  border-color: #6b7280 !important;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.header-action-library:hover:not(:disabled) {
+  background: #d1d5db;
+  color: #1f2937;
 }
 
 .header-action-vocabulary {
-  border-color: #cbd5e1 !important;
-  background: #f8fafc;
-  color: #334155;
+  border-color: #6b7280 !important;
+  background: #e5e7eb;
+  color: #374151;
 }
 
-.header-action-vocabulary:hover {
-  background: #f1f5f9;
+.header-action-vocabulary:hover:not(:disabled) {
+  background: #d1d5db;
+  color: #1f2937;
 }
 
 #openDocumentButton {
-  border-color: #4338ca;
-  box-shadow: 0 2px 8px rgb(79 70 229 / 22%);
+  border-color: #4b5563;
+}
+
+/* Botón "Seguir leyendo": mismo look gris que los demás en off,
+   gris oscuro sólido en on. Hover siempre legible. */
+#followTranslationButton {
+  border: 1px solid #6b7280 !important;
+  background: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+#followTranslationButton:hover:not(:disabled) {
+  background: #d1d5db !important;
+  border-color: #4b5563 !important;
+  color: #1f2937 !important;
+}
+
+#followTranslationButton.is-following {
+  border: 1px solid #374151 !important;
+  background: #374151 !important;
+  color: #fff !important;
+}
+
+#followTranslationButton.is-following:hover:not(:disabled) {
+  background: #1f2937 !important;
+  border-color: #1f2937 !important;
+  color: #fff !important;
+}
+
+/* Secundarios genéricos (Volver a traducir): hover gris legible. */
+#retranslateButton:hover:not(:disabled) {
+  background: #d1d5db !important;
+  color: #1f2937 !important;
 }
 
 .header-actions .icon-button > span:first-child {
@@ -541,7 +848,8 @@ button:disabled {
   white-space: nowrap;
 }
 
-.translation-page-label {
+.translation-page-label,
+.reader-page-label {
   flex: 0 0 auto;
   margin: 0;
   border-radius: 9999px;
@@ -707,6 +1015,7 @@ button:disabled {
   container-type: inline-size;
 }
 
+/* Clases antiguas (compatibilidad): ahora usan .reader-toolbar / .reader-actions. */
 .translation-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -714,12 +1023,22 @@ button:disabled {
   gap: 4px;
 }
 
-.translation-toolbar-actions {
+.translation-toolbar-actions,
+.reader-actions-old {
   display: flex;
   min-width: 0;
   flex: 0 0 auto;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+}
+
+.translation-actions-separator,
+.translation-actions-separator-old {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: #e2e8f0;
+  flex: 0 0 auto;
 }
 
 #saveReadingPdfButton {
@@ -728,7 +1047,8 @@ button:disabled {
   white-space: nowrap;
 }
 
-.translation-status {
+.translation-status,
+.reader-status-old {
   min-width: 48px;
   max-width: 200px;
   flex: 1 1 90px;
@@ -740,7 +1060,8 @@ button:disabled {
   white-space: nowrap;
 }
 
-.translation-view-tools {
+.translation-view-tools,
+.translation-view-tools-old {
   flex: 0 0 auto;
   margin-left: auto;
 }

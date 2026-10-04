@@ -64,6 +64,7 @@ export function startApp() {
     pageReadingEdits: new Map(),
     pdfZoomBaseScale: 0,
     pdfZoomFactor: 1,
+    translationFollowMode: false,
   };
   const elements = {
     container: $("#viewerContainer"),
@@ -82,8 +83,10 @@ export function startApp() {
   wireSelectionMenu();
   wireReadingEditActions();
   wireDialogDragging();
+  wireDialogOutsideClose();
   wireVocabulary();
   wireResponsiveTabs();
+  wireFollowTranslation();
   const translationStatus = $("#translationStatus");
   new MutationObserver(() => {
     translationStatus.title = translationStatus.textContent;
@@ -100,15 +103,20 @@ export function startApp() {
       "fitPageButton",
       "rotateButton",
       "toggleSearchButton",
-      "downloadButton",
-      "printButton",
       "fullscreenButton",
       "translatePageButton",
+      // Seguir leyendo sigue la misma regla que Traducir: deshabilitado hasta subir PDF.
+      // Se habilita junto a translatePageButton en translateCurrentPage/handlePageChange.
+      "followTranslationButton",
+      "translationPreviousPageButton",
+      "translationNextPageButton",
+      "translationPageInput",
       "translationZoomOutButton",
       "translationZoomValueButton",
       "translationZoomInButton",
+      "translationFitPageButton",
+      "translationRotateButton",
       "translationSearchButton",
-      "translationDownloadButton",
       "translationFullscreenButton",
     ]) {
       $(`#${id}`).disabled = !enabled;
@@ -252,8 +260,26 @@ export function startApp() {
       $("#translationZoomValueButton").textContent = `${Math.round(state.translationZoom * 100)}%`;
       $("#translationZoomOutButton").disabled = !state.document || state.translationZoom <= 0.6;
       $("#translationZoomInButton").disabled = !state.document || state.translationZoom >= 2;
+      $("#translationFitPageButton").disabled = !state.document;
       $("#translationZoomValueButton").disabled = !state.document;
     };
+    // Navegación de página espejo: mueve el PDF original (única fuente de página).
+    $("#translationPreviousPageButton").addEventListener("click", () => {
+      if (reader?.pageCount) {
+        reader.goToPage(reader.currentPage - 1);
+      }
+    });
+    $("#translationNextPageButton").addEventListener("click", () => {
+      if (reader?.pageCount) {
+        reader.goToPage(reader.currentPage + 1);
+      }
+    });
+    $("#translationPageInput").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && reader?.pageCount) {
+        reader.goToPage(Number(event.currentTarget.value));
+        event.currentTarget.blur();
+      }
+    });
     $("#translationZoomOutButton").addEventListener("click", () => {
       state.translationZoom = Math.max(0.6, Math.round((state.translationZoom - zoomStep) * 10) / 10);
       updateZoom();
@@ -265,6 +291,16 @@ export function startApp() {
     $("#translationZoomValueButton").addEventListener("click", () => {
       state.translationZoom = 1;
       updateZoom();
+    });
+    $("#translationFitPageButton").addEventListener("click", () => {
+      state.translationZoom = 1;
+      updateZoom();
+    });
+    // Girar página: misma acción que la barra del PDF original (gira el documento).
+    $("#translationRotateButton").addEventListener("click", () => {
+      if (reader?.pageCount) {
+        reader.setRotation((reader.rotation + 90) % 360);
+      }
     });
 
     $("#translationSearchButton").addEventListener("click", () => {
@@ -292,11 +328,6 @@ export function startApp() {
       }
     });
 
-    $("#translationDownloadButton").addEventListener("click", () => {
-      if (state.document) {
-        reader.download(state.document.name);
-      }
-    });
     $("#translationFullscreenButton").addEventListener("click", async () => {
       try {
         if (document.fullscreenElement === $("#translationPanel")) {
@@ -462,7 +493,10 @@ export function startApp() {
         return;
       }
       const button = event.target.closest("[data-open-modified-reading]");
-      const reading = state.modifiedReadings?.[Number(button?.dataset.openModifiedReading)];
+      const visibleReadings = (state.modifiedReadings ?? []).filter(
+        (item) => item.savedPdf || item.variant !== "original",
+      );
+      const reading = visibleReadings[Number(button?.dataset.openModifiedReading)];
       if (reading) {
         dialog.close();
         void openModifiedReading(reading);
@@ -540,14 +574,19 @@ export function startApp() {
   function renderModifiedReadings(readings) {
     const list = $("#modifiedReadingsList");
     list.replaceChildren();
-    if (!readings.length) {
+    // Oculta las lecturas de variante original sin PDF guardado: son ediciones
+    // sobre el propio PDF original y se confunden con el archivo original.
+    const visibleReadings = (readings ?? []).filter(
+      (reading) => reading.savedPdf || reading.variant !== "original",
+    );
+    if (!visibleReadings.length) {
       const empty = document.createElement("p");
       empty.className = "py-3 text-center text-xs text-slate-500";
       empty.textContent = "Todavía no hay lecturas modificadas.";
       list.append(empty);
       return;
     }
-    for (const [index, reading] of readings.entries()) {
+    for (const [index, reading] of visibleReadings.entries()) {
       const name = document.createElement("span");
       name.className = "block truncate text-sm font-semibold text-slate-800";
       name.textContent = reading.document.name;
@@ -700,6 +739,8 @@ export function startApp() {
     $("#documentName").removeAttribute("title");
     $("#pageInput").value = "1";
     $("#pageCount").textContent = "—";
+    $("#translationPageInput").value = "1";
+    $("#translationPageCount").textContent = "—";
     $("#translationPageLabel").textContent = "— / —";
     $("#pdfEmptyState").classList.remove("hidden");
     renderEmptyPage(
@@ -874,6 +915,7 @@ export function startApp() {
           page,
           variantLabel: variant === "original" ? "original" : "español",
           text: applyReadingEdits(pageText, applicableEdits),
+          layout: await reader.getPageLayout(page),
         });
       }
 
@@ -985,6 +1027,25 @@ export function startApp() {
       dialog.showModal();
     }
     bringFloatingDialogToFront(dialog);
+  }
+
+  function wireDialogOutsideClose() {
+    for (const dialog of document.querySelectorAll(".centered-dialog")) {
+      dialog.addEventListener("pointerdown", (event) => {
+        if (event.target !== dialog) {
+          return;
+        }
+        const bounds = dialog.getBoundingClientRect();
+        const outside =
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom;
+        if (outside) {
+          dialog.close();
+        }
+      });
+    }
   }
 
   function bringFloatingDialogToFront(dialog) {
@@ -1240,6 +1301,8 @@ export function startApp() {
       $("#pdfEmptyState").classList.add("hidden");
       $("#pageInput").value = "1";
       $("#pageCount").textContent = "…";
+      $("#translationPageInput").value = "1";
+      $("#translationPageCount").textContent = "…";
       $("#translationPageLabel").textContent = "1 / …";
       $("#translationStatus").textContent = "Leyendo página 1…";
       renderEmptyPage(elements.translation, "Cargando documento", "Preparando el visor PDF.");
@@ -1261,6 +1324,7 @@ export function startApp() {
       const pages = await reader.open(documentToOpen.fileUrl);
       setReaderEnabled(true);
       $("#pageCount").textContent = String(pages);
+      $("#translationPageCount").textContent = String(pages);
       await handlePageChange(reader.currentPage);
       showToast(`Documento abierto · ${pages} páginas`);
     } catch (error) {
@@ -1284,10 +1348,14 @@ export function startApp() {
     state.pageDisplay = null;
     state.selectionDisplay = null;
     $("#pageInput").value = String(page);
+    $("#translationPageInput").value = String(page);
     $("#translationPageLabel").textContent = `${page} / ${reader.pageCount}`;
     $("#previousPageButton").disabled = page <= 1;
     $("#nextPageButton").disabled = page >= reader.pageCount;
+    $("#translationPreviousPageButton").disabled = page <= 1;
+    $("#translationNextPageButton").disabled = page >= reader.pageCount;
     $("#translatePageButton").disabled = true;
+    $("#followTranslationButton").disabled = true;
     $("#retranslateButton").classList.add("hidden");
     const requestId = ++state.pageRequest;
     $("#translationStatus").textContent = `Leyendo página ${page}…`;
@@ -1324,6 +1392,7 @@ export function startApp() {
       state.currentPageContent = prepared;
       state.currentPageContentPage = page;
       $("#translatePageButton").disabled = false;
+      $("#followTranslationButton").disabled = false;
       const translation = state.translations.get(page);
       state.pageDisplay = {
         kind: "ready",
@@ -1339,6 +1408,9 @@ export function startApp() {
         renderActiveContent();
         $("#translationStatus").textContent =
           translation.cached ? "Traducción guardada en caché." : "Traducción de esta página.";
+      } else if (state.translationFollowMode) {
+        renderActiveContent();
+        await translateCurrentPage(false, requestId);
       } else if (state.ocr.has(page)) {
         renderActiveContent();
         $("#translationStatus").textContent =
@@ -1359,7 +1431,7 @@ export function startApp() {
     }
   }
 
-  async function translateCurrentPage(force = false) {
+  async function translateCurrentPage(force = false, requestId = null) {
     const page = reader.currentPage;
     let prepared =
       state.currentPageContentPage === page ? state.currentPageContent : null;
@@ -1391,6 +1463,7 @@ export function startApp() {
     }
 
     $("#translatePageButton").disabled = true;
+    $("#followTranslationButton").disabled = true;
     $("#retranslateButton").disabled = true;
     $("#translationStatus").textContent = force ? "Solicitando una nueva traducción…" : "Traduciendo página…";
     renderEmptyPage(elements.translation, "Traduciendo", "Enviando solo el texto de la página actual a LibreTranslate local.");
@@ -1401,6 +1474,12 @@ export function startApp() {
         prepared.translationSource,
         force,
       );
+      if (requestId !== null && requestId !== state.pageRequest) {
+        return;
+      }
+      if (reader.currentPage !== page) {
+        return;
+      }
       const translatedText = correctTranslation(
         prepared.originalText,
         prepared.restoreTranslation(result.translatedText),
@@ -1421,12 +1500,56 @@ export function startApp() {
         ? "Traducción recuperada de la caché local."
         : "Traducción guardada en caché local.";
     } catch (error) {
+      if (requestId !== null && requestId !== state.pageRequest) {
+        return;
+      }
       $("#translationStatus").textContent = "No se pudo traducir la página.";
       renderEmptyPage(elements.translation, "Traducción no disponible", error.message);
     } finally {
       $("#translatePageButton").disabled = false;
+      $("#followTranslationButton").disabled = false;
       $("#retranslateButton").disabled = false;
     }
+  }
+
+  function paintFollowTranslationButton() {
+    const button = $("#followTranslationButton");
+    if (!button) {
+      return;
+    }
+    button.textContent = state.translationFollowMode ? "Seguir leyendo: on" : "Seguir leyendo: off";
+    button.setAttribute("aria-pressed", String(state.translationFollowMode));
+    // El color lo gobierna el CSS (#followTranslationButton / .is-following)
+    // para que el hover no lo pise con un blanco ilegible.
+    button.classList.toggle("is-following", state.translationFollowMode);
+  }
+
+  function wireFollowTranslation() {
+    const button = $("#followTranslationButton");
+    if (!button) {
+      return;
+    }
+    paintFollowTranslationButton();
+    button.addEventListener("click", () => {
+      state.translationFollowMode = !state.translationFollowMode;
+      paintFollowTranslationButton();
+      if (state.translationFollowMode) {
+        // Al activarlo: si ya hay texto listo y falta traducción, traducir ahora
+        // mismo; si no, la próxima página que abras se traducirá sola.
+        const page = reader?.currentPage;
+        if (
+          state.document && reader?.pageCount &&
+          state.currentPageContentPage === page &&
+          !state.translations.get(page)
+        ) {
+          void translateCurrentPage(false, state.pageRequest);
+        } else {
+          showToast("Seguir leyendo activado: cada página que abras se traducirá sola.");
+        }
+      } else {
+        showToast("Seguir leyendo desactivado.");
+      }
+    });
   }
 
   async function recognizeCurrentPage(page, button) {
@@ -1460,7 +1583,14 @@ export function startApp() {
       void chooseDocument(file);
       event.target.value = "";
     });
-    $("#translatePageButton").addEventListener("click", () => void translateCurrentPage());
+    $("#translatePageButton").addEventListener("click", () => {
+      if (!state.translationFollowMode) {
+        state.translationFollowMode = true;
+        paintFollowTranslationButton();
+        showToast("Seguir leyendo activado: cada página que abras se traducirá sola.");
+      }
+      void translateCurrentPage();
+    });
     $("#retranslateButton").addEventListener("click", () => void translateCurrentPage(true));
   }
 
@@ -1500,14 +1630,6 @@ export function startApp() {
     $("#zoomValueButton").addEventListener("click", () => resetPdfZoom());
     $("#fitPageButton").addEventListener("click", () => resetPdfZoom("page-fit"));
     $("#rotateButton").addEventListener("click", () => reader.setRotation((reader.rotation + 90) % 360));
-    $("#downloadButton").addEventListener("click", () =>
-      reader.download(state.document?.name ?? "document.pdf"),
-    );
-    $("#printButton").addEventListener("click", () => {
-      if (state.document) {
-        void reader.print(state.document.fileUrl);
-      }
-    });
     $("#fullscreenButton").addEventListener("click", async () => {
       try {
         if (document.fullscreenElement) {

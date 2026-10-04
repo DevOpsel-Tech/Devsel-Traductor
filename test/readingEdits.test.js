@@ -121,7 +121,6 @@ test("persists reading edits, lists variants, and undoes only the selected edit"
   assert.deepEqual(
     (await modified.json()).map(({ variant, pages }) => ({ variant, pages })),
     [
-      { variant: "original", pages: [2] },
       { variant: "spanish", pages: [2] },
     ],
   );

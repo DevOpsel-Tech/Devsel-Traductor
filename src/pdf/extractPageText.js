@@ -55,6 +55,48 @@ export function extractPageText(items) {
     .trim());
 }
 
+// Devuelve la caja de texto y el cuerpo tipográfico de la página original
+// para que el PDF regenerado mantenga la misma distribución (columna y tamaño).
+export function extractPageLayout(items) {
+  const usable = items.filter(
+    (item) => Array.isArray(item.transform) && typeof item.str === "string" && item.str.trim(),
+  );
+  if (!usable.length) {
+    return null;
+  }
+  let left = Number.POSITIVE_INFINITY;
+  let right = Number.NEGATIVE_INFINITY;
+  const sizeWeights = new Map();
+  for (const item of usable) {
+    const size = Math.max(1, Math.hypot(item.transform[2], item.transform[3]));
+    const itemWidth = Number.isFinite(item.width) ? item.width : 0;
+    left = Math.min(left, item.transform[4]);
+    right = Math.max(right, item.transform[4] + itemWidth);
+    const bucket = Math.round(size * 2) / 2;
+    sizeWeights.set(bucket, (sizeWeights.get(bucket) ?? 0) + item.str.length);
+  }
+  const fontSize = dominantFontSize(sizeWeights);
+  if (!Number.isFinite(left) || right <= left) {
+    return { fontSize };
+  }
+  return { fontSize, left, right };
+}
+
+// Tamaño de cuerpo = mediana de tamaños ponderada por caracteres
+// (los títulos grandes pesan poco y no se comen el tamaño del texto normal).
+function dominantFontSize(sizeWeights) {
+  const entries = [...sizeWeights.entries()].sort((left, right) => left[0] - right[0]);
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  let accumulated = 0;
+  for (const [size, weight] of entries) {
+    accumulated += weight;
+    if (accumulated >= total / 2) {
+      return size;
+    }
+  }
+  return entries.at(-1)[0];
+}
+
 function normalizeWrappedText(text) {
   const lines = text
     .replace(/([A-Za-z])-\s*\n\s*([a-z])/g, "$1$2")

@@ -6,7 +6,7 @@ import {
   PDFViewer,
 } from "pdfjs-dist/web/pdf_viewer.mjs";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { extractPageText } from "./extractPageText.js";
+import { extractPageLayout, extractPageText } from "./extractPageText.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -17,6 +17,7 @@ export class PdfReader {
   #document = null;
   #loadingTask = null;
   #pageText = new Map();
+  #pageLayout = new Map();
   #pageHasImages = new Map();
   #pageChange;
   #findCountChange;
@@ -59,6 +60,7 @@ export class PdfReader {
     const document = await this.#loadingTask.promise;
     this.#document = document;
     this.#pageText.clear();
+    this.#pageLayout.clear();
     this.#pageHasImages.clear();
     this.linkService.setDocument(document, fileUrl);
     const pagesInitialized = new Promise((resolve) => {
@@ -75,6 +77,7 @@ export class PdfReader {
     this.linkService.setDocument(null);
     this.#document = null;
     this.#pageText.clear();
+    this.#pageLayout.clear();
     this.#pageHasImages.clear();
     if (this.#loadingTask) {
       const loadingTask = this.#loadingTask;
@@ -152,6 +155,7 @@ export class PdfReader {
     const page = await this.#document.getPage(pageNumber);
     const content = await page.getTextContent();
     const text = extractPageText(content.items);
+    this.#pageLayout.set(pageNumber, extractPageLayout(content.items));
     const operators = await page.getOperatorList();
     const imageOperators = new Set(
       [
@@ -169,6 +173,15 @@ export class PdfReader {
 
   hasPageImages(pageNumber) {
     return this.#pageHasImages.get(pageNumber) === true;
+  }
+
+  // Caja de texto y cuerpo de la página original (para regenerar el PDF
+  // con la misma columna y tamaño que el documento de partida).
+  async getPageLayout(pageNumber) {
+    if (!this.#pageLayout.has(pageNumber)) {
+      await this.getPageText(pageNumber);
+    }
+    return this.#pageLayout.get(pageNumber) ?? null;
   }
 
   download(name) {

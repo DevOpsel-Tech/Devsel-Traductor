@@ -33,18 +33,27 @@ export async function createModifiedReadingPdf(sourceBytes, modifiedPages, fontB
       height,
       changedPage.variantLabel,
       pageNumber,
+      changedPage.layout,
     );
   }
 
   output.setTitle("Lectura modificada");
-  output.setSubject("Edición de lectura guardada desde traductor pdf: << $elu >>");
+  output.setSubject("Edición de lectura guardada desde TRADUCTOR PDF");
   return output.save();
 }
 
-function drawReflowedPages(output, text, fonts, pageWidth, pageHeight, variantLabel, pageNumber) {
-  const contentWidth = pageWidth - PAGE_MARGIN * 2;
+function drawReflowedPages(output, text, fonts, pageWidth, pageHeight, variantLabel, pageNumber, layout) {
+  // Respeta la caja de texto y el cuerpo de la página original.
+  const { left: contentLeft, right: contentRight } = resolveContentBox(layout, pageWidth);
+  const contentWidth = contentRight - contentLeft;
   const normalizedText = normalizePdfCharacters(text, fonts);
-  const fontSize = chooseFontSize(normalizedText, fonts, contentWidth, pageHeight);
+  const fontSize = chooseFontSize(
+    normalizedText,
+    fonts,
+    contentWidth,
+    pageHeight,
+    baseFontSize(layout),
+  );
   const lineHeight = fontSize * 1.45;
   const lines = wrapText(normalizedText, fonts, fontSize, contentWidth);
   const availableHeight = pageHeight - PAGE_MARGIN * 2 - HEADER_HEIGHT;
@@ -52,29 +61,64 @@ function drawReflowedPages(output, text, fonts, pageWidth, pageHeight, variantLa
   for (let offset = 0; offset < lines.length; offset += linesPerPage) {
     const page = output.addPage([pageWidth, pageHeight]);
     const continuation = offset ? " · continuación" : "";
-    page.drawText(
-      `Lectura modificada · ${variantLabel} · página ${pageNumber}${continuation}`,
-      {
-        x: PAGE_MARGIN,
-        y: pageHeight - PAGE_MARGIN,
-        size: 9,
-        font: fonts[0],
-        color: rgb(0.22, 0.25, 0.36),
-      },
-    );
+    const headerStyle = {
+      y: pageHeight - PAGE_MARGIN,
+      size: 9,
+      font: fonts[0],
+      color: rgb(0.22, 0.25, 0.36),
+    };
+    // Etiqueta a la izquierda y número de página a la derecha (como en el original).
+    page.drawText(`Lectura modificada · ${variantLabel}`, {
+      ...headerStyle,
+      x: contentLeft,
+    });
+    const pageLabel = `página ${pageNumber}${continuation}`;
+    const pageLabelWidth = measureText(pageLabel, fonts, 9);
+    page.drawText(pageLabel, {
+      ...headerStyle,
+      x: contentRight - pageLabelWidth,
+    });
     let y = pageHeight - PAGE_MARGIN - HEADER_HEIGHT;
     for (const line of lines.slice(offset, offset + linesPerPage)) {
-      drawFontRuns(page, line, fonts, PAGE_MARGIN, y, fontSize);
+      drawFontRuns(page, line, fonts, contentLeft, y, fontSize);
       y -= lineHeight;
     }
   }
 }
 
-function chooseFontSize(text, fonts, contentWidth, pageHeight) {
-  const availableLines =
-    Math.floor((pageHeight - PAGE_MARGIN * 2 - HEADER_HEIGHT) / (MIN_FONT_SIZE * 1.45));
-  for (let size = 10; size >= MIN_FONT_SIZE; size -= 0.5) {
-    if (wrapText(text, fonts, size, contentWidth).length <= availableLines) {
+// Caja de contenido: la columna de texto del original si la conocemos,
+// o los márgenes por defecto en caso contrario.
+function resolveContentBox(layout, pageWidth) {
+  const fallback = { left: PAGE_MARGIN, right: pageWidth - PAGE_MARGIN };
+  if (!layout || !Number.isFinite(layout.left) || !Number.isFinite(layout.right)) {
+    return fallback;
+  }
+  const left = Math.max(8, Math.min(layout.left, pageWidth * 0.4));
+  const right = Math.min(pageWidth - 8, Math.max(layout.right, pageWidth * 0.6));
+  if (right - left < pageWidth * 0.5) {
+    return fallback;
+  }
+  return { left, right };
+}
+
+// Cuerpo base = tamaño real del texto del original (redondeado a medio punto).
+function baseFontSize(layout) {
+  if (!layout || !Number.isFinite(layout.fontSize)) {
+    return 10;
+  }
+  const clamped = Math.min(16, Math.max(MIN_FONT_SIZE, layout.fontSize));
+  return Math.round(clamped * 2) / 2;
+}
+
+function chooseFontSize(text, fonts, contentWidth, pageHeight, baseSize = 10) {
+  // Encaja el contenido de la página original en UNA sola página de salida
+  // (como el original): empezando por su tamaño real de cuerpo y reduciendo
+  // solo si hace falta, en vez de partirlo en una página llena + otra media vacía.
+  const availableHeight = pageHeight - PAGE_MARGIN * 2 - HEADER_HEIGHT;
+  const startSize = Math.max(MIN_FONT_SIZE, Math.min(16, baseSize));
+  for (let size = startSize; size >= MIN_FONT_SIZE; size -= 0.5) {
+    const linesPerPage = Math.floor(availableHeight / (size * 1.45));
+    if (linesPerPage > 0 && wrapText(text, fonts, size, contentWidth).length <= linesPerPage) {
       return size;
     }
   }

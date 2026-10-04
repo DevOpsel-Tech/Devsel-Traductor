@@ -33,7 +33,10 @@ export function createDocumentRouter(documents, cache, translator) {
           });
         }
         const index = await cache.get(document.id, "reading-edits", 0, "index");
-        for (const variant of ["original", "spanish"]) {
+        // Solo la variante en español genera entradas de "lectura modificada".
+        // La variante original se edita sobre el propio PDF y no debe
+        // aparecer como un archivo aparte con el mismo nombre del original.
+        for (const variant of ["spanish"]) {
           const pages = index?.[variant] ?? [];
           if (pages.length) {
             modified.push({ document, variant, pages });
@@ -129,14 +132,15 @@ export function createDocumentRouter(documents, cache, translator) {
       }
       const page = parsePage(request.params.page);
       const sourceText = readText(request.body?.sourceText, MAX_TEXT_LENGTH);
-      const key = cache.keyFor(`${process.env.TRANSLATION_PROVIDER ?? "libretranslate"}\n${sourceText}`);
+      const engine = `${process.env.TRANSLATION_PROVIDER ?? "libretranslate"}\n${process.env.LIBRETRANSLATE_URL ?? "http://127.0.0.1:5000/translate"}`;
+      const key = cache.keyFor(`${engine}\n${sourceText}`);
       if (!request.body?.force) {
         const cached = await cache.get(document.id, "translation", page, key);
         if (cached) {
           return response.json({ ...cached, cached: true });
         }
       }
-      const translatedText = await translator.translate(sourceText);
+      const translatedText = await translator.translate(sourceText, "es", "en");
       const result = {
         translatedText,
         cached: false,

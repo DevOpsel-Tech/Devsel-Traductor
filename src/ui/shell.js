@@ -1,26 +1,33 @@
 export function renderShell(root) {
   root.innerHTML = `
     <div class="flex h-full flex-col bg-[#f4f6fa]">
-      <header class="z-10 flex h-[62px] shrink-0 items-center justify-between border-b border-slate-200/80 bg-white px-4 sm:px-6">
-        <div class="header-brand flex min-w-0 items-center gap-3">
-          <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200">
+      <header class="app-header z-10 flex h-[62px] shrink-0 items-center px-4 sm:px-6">
+        <div class="header-brand flex min-w-0 shrink-0 items-center gap-3">
+          <div class="header-logo flex size-9 shrink-0 items-center justify-center rounded-xl text-white">
             <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
               <path d="M4.5 5.5c3.4-.9 6.2-.3 7.5 1.2v12c-1.3-1.5-4.1-2.1-7.5-1.2zM19.5 5.5c-3.4-.9-6.2-.3-7.5 1.2v12c1.3-1.5 4.1-2.1 7.5-1.2z"/>
             </svg>
           </div>
           <div class="min-w-0">
-            <div class="max-w-full truncate text-[15px] font-semibold tracking-tight text-slate-900">traductor pdf: &lt;&lt; $elu &gt;&gt;</div>
-            <div id="documentName" class="max-w-[40vw] truncate text-[11px] text-slate-500">Espacio de lectura personal</div>
+            <div class="header-title max-w-full truncate text-[15px] font-semibold tracking-tight">TRADUCTOR PDF</div>
+            <div id="documentName" class="header-subtitle max-w-[40vw] truncate text-[11px]">Espacio de lectura personal</div>
           </div>
         </div>
-        <div class="header-actions flex shrink-0 items-center gap-2">
-          <button id="libraryButton" class="icon-button header-action-library" type="button" title="Ver archivos subidos">
+        <div class="header-zone-translate">
+          <button id="retranslateButton" class="icon-button header-button hidden" type="button">Volver a traducir</button>
+          <button id="saveReadingPdfButton" class="icon-button header-button" type="button" disabled title="Guardar PDF modificado">Guardar PDF modificado</button>
+          <span class="header-zone-separator" aria-hidden="true"></span>
+          <button id="translatePageButton" class="icon-button header-button header-button-primary" type="button" disabled>Traducir página</button>
+          <button id="followTranslationButton" class="icon-button header-button" type="button" disabled title="Al activarlo, cada página que abras en el PDF se traduce sola para poder ir leyendo" aria-pressed="false">Seguir leyendo: off</button>
+        </div>
+        <div class="header-zone-library">
+          <button id="libraryButton" class="icon-button header-button" type="button" title="Ver archivos subidos">
             <span aria-hidden="true">▣</span><span>Archivos subidos</span>
           </button>
-          <button id="vocabularyButton" class="icon-button header-action-vocabulary" type="button" title="Abrir vocabulario">
+          <button id="vocabularyButton" class="icon-button header-button" type="button" title="Abrir vocabulario">
             <span aria-hidden="true">▤</span><span>Vocabulario</span>
           </button>
-          <button id="openDocumentButton" class="icon-button bg-indigo-600 text-white shadow-sm hover:bg-indigo-700" type="button" title="Subir PDF" aria-label="Subir PDF">
+          <button id="openDocumentButton" class="icon-button header-button header-button-primary" type="button" title="Subir PDF" aria-label="Subir PDF">
             <span aria-hidden="true">＋</span><span>Subir PDF</span>
           </button>
           <input id="fileInput" class="hidden" type="file" accept="application/pdf,.pdf" />
@@ -34,24 +41,28 @@ export function renderShell(root) {
 
       <main id="readerMain" class="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[minmax(300px,42%)_minmax(0,1fr)]">
         <section id="translationPanel" class="flex min-h-0 flex-col border-r border-slate-200 bg-white" aria-label="Texto traducido al español">
-          <div class="translation-toolbar shrink-0 border-b border-slate-100 bg-white px-3 py-1.5" role="toolbar" aria-label="Herramientas de lectura">
-            <div class="translation-zoom-tools flex items-center gap-1">
-              <button id="translationZoomOutButton" class="toolbar-button text-lg" type="button" title="Reducir zoom del texto" aria-label="Reducir zoom del texto" disabled>−</button>
-              <button id="translationZoomValueButton" class="h-8 min-w-12 rounded-md px-1 text-xs tabular-nums text-slate-600 hover:bg-slate-100" type="button" title="Restablecer zoom del texto" disabled>100%</button>
-              <button id="translationZoomInButton" class="toolbar-button text-lg" type="button" title="Aumentar zoom del texto" aria-label="Aumentar zoom del texto" disabled>＋</button>
+          <div class="reader-toolbar shrink-0" role="toolbar" aria-label="Herramientas del PDF traducido">
+            <div class="reader-toolbar-group">
+              <button id="translationPreviousPageButton" class="toolbar-button" type="button" title="Página anterior" aria-label="Página anterior" disabled>‹</button>
+              <input id="translationPageInput" class="reader-page-input" type="number" min="1" value="1" aria-label="Página actual" disabled />
+              <span class="reader-page-count">/ <span id="translationPageCount">—</span></span>
+              <button id="translationNextPageButton" class="toolbar-button" type="button" title="Página siguiente" aria-label="Página siguiente" disabled>›</button>
             </div>
-            <span id="translationStatus" class="translation-status" title="Las traducciones se guardan localmente en este dispositivo." aria-live="polite">Las traducciones se guardan localmente en este dispositivo.</span>
-            <span id="translationPageLabel" class="translation-page-label">— / —</span>
-            <div id="translationActions" class="translation-toolbar-actions">
-              <button id="retranslateButton" class="icon-button hidden border border-slate-200 text-slate-600 hover:bg-slate-50" type="button">Volver a traducir</button>
-              <button id="translatePageButton" class="icon-button bg-indigo-600 text-white hover:bg-indigo-700" type="button" disabled>Traducir página</button>
-              <button id="saveReadingPdfButton" class="icon-button border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50" type="button" disabled title="Guardar PDF modificado">Guardar PDF modificado</button>
+            <span class="reader-toolbar-separator" aria-hidden="true"></span>
+            <div class="reader-toolbar-group">
+              <button id="translationZoomOutButton" class="toolbar-button text-lg" type="button" title="Reducir zoom" aria-label="Reducir zoom" disabled>−</button>
+              <button id="translationZoomValueButton" class="reader-zoom-value" type="button" title="Restablecer zoom al 100 %" disabled>100%</button>
+              <button id="translationZoomInButton" class="toolbar-button text-lg" type="button" title="Aumentar zoom" aria-label="Aumentar zoom" disabled>＋</button>
+              <button id="translationFitPageButton" class="toolbar-button" type="button" title="Restablecer zoom al 100 %" aria-label="Restablecer zoom al 100 %" disabled>□</button>
+              <button id="translationRotateButton" class="toolbar-button" type="button" title="Girar página" aria-label="Girar página" disabled>↻</button>
             </div>
-            <div class="translation-view-tools flex items-center justify-end gap-1">
-              <button id="translationSearchButton" class="toolbar-button" type="button" title="Buscar en este texto" aria-label="Buscar en este texto" disabled>⌕</button>
-              <button id="translationDownloadButton" class="toolbar-button" type="button" title="Descargar PDF" aria-label="Descargar PDF" disabled>↓</button>
-              <button id="translationFullscreenButton" class="toolbar-button" type="button" title="Pantalla completa del panel de lectura" aria-label="Pantalla completa del panel de lectura" disabled>⛶</button>
+            <span class="reader-toolbar-separator" aria-hidden="true"></span>
+            <div class="reader-toolbar-group">
+              <button id="translationSearchButton" class="toolbar-button" type="button" title="Buscar en el texto" aria-label="Buscar en el texto" disabled>⌕</button>
+              <button id="translationFullscreenButton" class="toolbar-button" type="button" title="Pantalla completa" aria-label="Pantalla completa" disabled>⛶</button>
             </div>
+            <span id="translationStatus" class="sr-only" aria-live="polite">Las traducciones se guardan localmente en este dispositivo.</span>
+            <span id="translationPageLabel" class="sr-only">— / —</span>
           </div>
           <div id="translationSearchBar" class="hidden shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 py-2">
             <input id="translationSearchInput" class="h-8 min-w-0 flex-1 rounded-md border border-slate-200 px-2.5 text-sm outline-none focus:border-indigo-400" type="search" placeholder="Buscar en el texto mostrado" aria-label="Buscar en el texto mostrado" />
@@ -74,24 +85,24 @@ export function renderShell(root) {
         <div id="panelResizer" class="panel-resizer" role="separator" aria-label="Ajustar el ancho de los paneles" aria-orientation="vertical" aria-valuenow="42" tabindex="0" title="Arrastra para ajustar el ancho de los paneles"></div>
 
         <section id="pdfPanel" class="flex min-h-0 min-w-0 flex-col bg-slate-100" aria-label="Documento PDF original">
-          <div class="flex min-h-[58px] shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 bg-white px-3 sm:px-4">
-            <div class="flex items-center gap-1">
+          <div class="reader-toolbar shrink-0" role="toolbar" aria-label="Herramientas del PDF original">
+            <div class="reader-toolbar-group">
               <button id="previousPageButton" class="toolbar-button" type="button" title="Página anterior" aria-label="Página anterior" disabled>‹</button>
-              <input id="pageInput" class="h-8 w-12 rounded-md border border-slate-200 text-center text-xs tabular-nums outline-none focus:border-indigo-400" type="number" min="1" value="1" aria-label="Página actual" disabled />
-              <span class="text-xs text-slate-400">/ <span id="pageCount">—</span></span>
+              <input id="pageInput" class="reader-page-input" type="number" min="1" value="1" aria-label="Página actual" disabled />
+              <span class="reader-page-count">/ <span id="pageCount">—</span></span>
               <button id="nextPageButton" class="toolbar-button" type="button" title="Página siguiente" aria-label="Página siguiente" disabled>›</button>
             </div>
-            <div class="flex items-center gap-1">
+            <span class="reader-toolbar-separator" aria-hidden="true"></span>
+            <div class="reader-toolbar-group">
               <button id="zoomOutButton" class="toolbar-button text-lg" type="button" title="Reducir zoom" aria-label="Reducir zoom" disabled>−</button>
-              <button id="zoomValueButton" class="h-8 min-w-12 rounded-md px-1 text-xs tabular-nums text-slate-600 hover:bg-slate-100" type="button" title="Restablecer al 100 % del ancho visible" disabled>100%</button>
+              <button id="zoomValueButton" class="reader-zoom-value" type="button" title="Restablecer al 100 % del ancho visible" disabled>100%</button>
               <button id="zoomInButton" class="toolbar-button text-lg" type="button" title="Aumentar zoom" aria-label="Aumentar zoom" disabled>＋</button>
               <button id="fitPageButton" class="toolbar-button" type="button" title="Ajustar página al marco" aria-label="Ajustar página al marco" disabled>□</button>
               <button id="rotateButton" class="toolbar-button" type="button" title="Girar página" aria-label="Girar página" disabled>↻</button>
             </div>
-            <div class="flex items-center gap-1">
+            <span class="reader-toolbar-separator" aria-hidden="true"></span>
+            <div class="reader-toolbar-group">
               <button id="toggleSearchButton" class="toolbar-button" type="button" title="Buscar en el PDF (Ctrl+F)" aria-label="Buscar en el PDF" disabled>⌕</button>
-              <button id="downloadButton" class="toolbar-button" type="button" title="Descargar PDF" aria-label="Descargar PDF" disabled>↓</button>
-              <button id="printButton" class="toolbar-button" type="button" title="Imprimir PDF" aria-label="Imprimir PDF" disabled>▤</button>
               <button id="fullscreenButton" class="toolbar-button" type="button" title="Pantalla completa" aria-label="Pantalla completa" disabled>⛶</button>
             </div>
           </div>
@@ -132,8 +143,8 @@ export function renderShell(root) {
       </button>
     </div>
 
-    <dialog id="libraryDialog" class="centered-dialog library-dialog w-[min(92vw,680px)] rounded-2xl border border-slate-200 p-0 shadow-2xl">
-      <div class="dialog-drag-handle flex items-center justify-between border-b border-slate-100 px-5 py-4" data-dialog-drag-handle>
+    <dialog id="libraryDialog" class="centered-dialog library-dialog vocabulary-dialog w-[min(92vw,680px)] rounded-2xl border p-0 shadow-2xl">
+      <div class="vocabulary-dialog-header dialog-drag-handle" data-dialog-drag-handle>
         <div class="min-w-0"><h2 id="libraryTitle" class="font-semibold text-slate-900">Archivos subidos</h2><p class="mt-0.5 text-xs text-slate-500">Abre y continúa editando cualquiera de tus PDF.</p></div>
         <button id="closeLibraryButton" class="toolbar-button text-xl" type="button" aria-label="Cerrar archivos subidos">×</button>
       </div>

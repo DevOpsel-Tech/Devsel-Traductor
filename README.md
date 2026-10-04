@@ -1,4 +1,4 @@
-# traductor pdf: << $elu >>
+# TRADUCTOR PDF
 
 Personal PDF reader with Spanish translation, on-demand OCR, contextual study help, and a browser-local vocabulary list.
 
