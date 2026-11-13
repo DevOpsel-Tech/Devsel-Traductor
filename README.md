@@ -22,9 +22,10 @@ Los archivos son una versión de prueba y la instalación todavía no se ha veri
 
 La versión de prueba para macOS se genera en el flujo de compilación y estará disponible como artefacto de GitHub Actions o en el borrador de release:
 
-1. Ve a [Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions) o [Releases](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases).
-2. Descarga el archivo `.dmg`.
-3. Ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
+1. Ve a [Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/workflows/build.yml).
+2. Abre la última ejecución exitosa.
+3. Descarga el artefacto `traductor-macos-latest` (archivo `.dmg`).
+4. Ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
 
 > Es una compilación sin firma ni notarización de Apple. macOS puede mostrar una advertencia de desarrollador no identificado. Para abrirla: clic derecho → Abrir → Abrir de todos modos.
 
