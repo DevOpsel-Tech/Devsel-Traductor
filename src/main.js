@@ -2,9 +2,10 @@ import "./styles.css";
 import * as pdfjs from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import "pdfjs-dist/web/pdf_viewer.css";
-import { translateWithOpenRouter, detectSourceLanguage, defaultEndpoint, defaultModel, languages } from "./openrouter.js";
+import { translateWithOpenRouter, detectSourceLanguage, defaultEndpoint, defaultModel, languages, providers } from "./openrouter.js";
 import { deleteDocument, getDocument, listDocuments, saveDocument } from "./documentLibrary.js";
 import { groupTextLines, fittingFontSize } from "./pdfLayout.js";
+import { createSessionKey, validatePdf } from "./session.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -13,6 +14,7 @@ let pdf, pageNumber = 1, zoom = 1, rendering = false, resizePending = false;
 let currentDocumentId = null;
 let languageVersion = 0;
 let detectionVersion = 0;
+let activeTranslationTrigger = null;
 const translations = new Map();
 
 const status = (m) => { $("#status").textContent = m; };
@@ -23,17 +25,14 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
-const settings = () => {
-  const saved = store.get("settings", { apiKey: "" });
-  // Never send a key saved for a different provider to Gemini.
-  if (saved.endpoint !== defaultEndpoint) return { apiKey: "", endpoint: defaultEndpoint, model: defaultModel };
-  return { ...saved, endpoint: defaultEndpoint, model: defaultModel };
-};
-const saveSettings = (s) => store.set("settings", s);
+const session = createSessionKey(localStorage, defaultEndpoint);
+let activeProvider = "gemini";
+const settings = () => ({ apiKey: session.get(), ...providers[activeProvider] });
+const saveSettings = (s) => { session.set(s.apiKey); };
 function updateKeyState() {
-  $("#keyState").textContent = settings().apiKey
-    ? "Clave guardada; conexión sin verificar."
-    : "No hay ninguna clave guardada.";
+  $("#keyState").textContent = session.get()
+    ? "Clave disponible durante esta sesión; conexión sin verificar."
+    : "No hay ninguna clave activa. Se solicitará de nuevo al cerrar la aplicación.";
 }
 function saveReadingPosition() {
   if (currentDocumentId && pdf) {
@@ -43,6 +42,7 @@ function saveReadingPosition() {
 
 async function render() {
   if (rendering || !pdf) return;
+  if ($("#translationDialog").open) $("#translationDialog").close();
   rendering = true;
   for (const id of ["prev", "next", "bottomPrev", "bottomNext", "zoomOut", "zoomIn"]) $(`#${id}`).disabled = true;
   try {
@@ -92,7 +92,9 @@ async function render() {
 }
 
 async function openDocument(name, bytes, save, id = null, position = null) {
-  const loaded = await pdfjs.getDocument({ data: new Uint8Array(bytes.slice(0)) }).promise;
+  let loaded;
+  try { loaded = await pdfjs.getDocument({ data: new Uint8Array(bytes.slice(0)) }).promise; }
+  catch { throw new Error("No se pudo abrir el PDF. Comprueba que no está dañado ni protegido con contraseña."); }
   if (save) {
     try { id = await saveDocument(name, bytes); }
     catch (error) { await loaded.destroy(); throw new Error("No se pudo guardar el PDF en este dispositivo: " + error.message); }
@@ -153,7 +155,10 @@ $("#file").addEventListener("change", action(async (e) => {
   const f = e.target.files[0]; if (!f) return;
   try {
     if (f.size > 50 * 1024 * 1024) throw new Error("El PDF supera 50 MiB.");
-    await openDocument(f.name, await f.arrayBuffer(), true);
+    const bytes = await f.arrayBuffer();
+    validatePdf(bytes);
+    status("Abriendo y guardando el PDF…");
+    await openDocument(f.name, bytes, true);
     await refreshLibrary();
   } finally { e.target.value = ""; }
 }));
@@ -221,8 +226,18 @@ function createLineControl(text, key, box) {
   button.setAttribute("aria-pressed", "false");
   button.style.top = `${box.top + box.height / 2}px`;
   button.style.left = `${Math.min(box.left + box.width + 4, $("#pdfPage").clientWidth + 4)}px`;
-  const result = document.createElement("div"); result.className = "translation-overlay"; result.setAttribute("role", "status"); result.hidden = true;
-  result.addEventListener("click", () => status(result.textContent));
+  const result = document.createElement("button");
+  result.type = "button";
+  result.className = "translation-overlay translation-detail-trigger";
+  result.hidden = true;
+  result.setAttribute("aria-label", "Mostrar traducción completa");
+  result.setAttribute("aria-haspopup", "dialog");
+  result.setAttribute("aria-controls", "translationDialog");
+  result.setAttribute("aria-expanded", "false");
+  result.addEventListener("click", () => {
+    status(result.textContent);
+    openTranslationDialog(result, result.textContent);
+  });
   Object.assign(result.style, { left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px` });
   const existing = translations.get(key);
   if (existing) { showOverlayText(result, existing, box); button.classList.add("translated"); button.setAttribute("aria-pressed", "true"); }
@@ -237,10 +252,12 @@ function createLineControl(text, key, box) {
     const current = ++request;
     const currentLanguage = languageVersion;
     button.setAttribute("aria-busy", "true");
+    status("Traduciendo línea…");
     try {
       const translated = await translateWithOpenRouter(text, apiKey, fetch, endpoint, model, $("#targetLanguage").value);
       if (current !== request || currentLanguage !== languageVersion || !button.isConnected) return;
       showOverlayText(result, translated, box); translations.set(key, translated); button.classList.add("translated"); button.setAttribute("aria-pressed", "true");
+      status("Traducción disponible. Pulsa la línea para ver el texto completo.");
     } catch (error) {
       if (current === request && button.isConnected) { result.hidden = true; button.classList.remove("translated"); }
       throw error;
@@ -260,8 +277,30 @@ function showOverlayText(element, text, box) {
   element.style.fontSize = `${size}px`;
   element.textContent = text;
   element.title = text;
+  if (element.classList.contains("translation-detail-trigger")) {
+    element.setAttribute("aria-label", `Mostrar traducción completa: ${text}`);
+  }
   element.hidden = false;
 }
+
+function openTranslationDialog(trigger, text) {
+  const dialog = $("#translationDialog");
+  activeTranslationTrigger = trigger;
+  $("#translationDialogText").textContent = text;
+  trigger.setAttribute("aria-expanded", "true");
+  dialog.showModal();
+  $("#closeTranslationDialog").focus();
+}
+
+$("#closeTranslationDialog").addEventListener("click", () => $("#translationDialog").close());
+$("#translationDialog").addEventListener("close", () => {
+  const trigger = activeTranslationTrigger;
+  activeTranslationTrigger = null;
+  if (trigger?.isConnected) {
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.focus();
+  }
+});
 
 $("#text").addEventListener("click", action(async (event) => {
   if (window.getSelection().toString().trim()) return;
@@ -309,27 +348,45 @@ $("#targetLanguage").addEventListener("change", action(async () => {
 $("#settings").addEventListener("click", action(async () => {
   const apiKey = $("#key").value.trim();
   if (!apiKey) throw new Error("Introduce una clave antes de guardarla.");
-  saveSettings({ apiKey, endpoint: defaultEndpoint, model: defaultModel });
-  $("#key").value = apiKey;
+  saveSettings({ apiKey });
+  $("#key").value = "";
   updateKeyState();
-  status("Clave guardada. La conexión todavía no se ha comprobado.");
+  status("Clave activa para esta sesión. La conexión todavía no se ha comprobado.");
   $("#settings").closest("details").open = false;
   if (pdf) void detectDocumentLanguage(pdf);
 }));
 
 $("#testKey").addEventListener("click", async () => {
   const button = $("#testKey");
-  const apiKey = $("#key").value.trim();
+  const apiKey = $("#key").value.trim() || session.get();
   if (!apiKey) { $("#keyState").textContent = "Introduce una clave para probarla."; return; }
   button.disabled = true;
   $("#keyState").textContent = "Comprobando la conexión…";
   try {
-    await translateWithOpenRouter("hello", apiKey);
-    if ($("#key").value.trim() === apiKey) $("#keyState").textContent = "Conexión con Gemini correcta.";
+    const { endpoint, model, name } = settings();
+    const provider = activeProvider;
+    await translateWithOpenRouter("hello", apiKey, fetch, endpoint, model);
+    if (activeProvider === provider && ($("#key").value.trim() === apiKey || session.get() === apiKey)) $("#keyState").textContent = `Conexión con ${name} correcta.`;
   } catch (error) {
-    if ($("#key").value.trim() === apiKey) $("#keyState").textContent = error.message;
+    if ($("#key").value.trim() === apiKey || session.get() === apiKey) $("#keyState").textContent = error.message;
   } finally { button.disabled = false; }
 });
+
+$("#provider").addEventListener("change", action(async () => {
+  const selected = $("#provider").value;
+  if (!Object.hasOwn(providers, selected) || selected === activeProvider) return;
+  activeProvider = selected;
+  session.set("");
+  $("#key").value = "";
+  detectionVersion++;
+  languageVersion++;
+  translations.clear();
+  $("#translationOverlays").replaceChildren();
+  if (pdf && !rendering) await render();
+  $("#sourceLanguage").textContent = pdf ? "Origen: conecta una API" : "Origen: pendiente";
+  updateKeyState();
+  status(`Proveedor: ${providers[selected].name}. Introduce su clave de API.`);
+}));
 
 $("#clearKey").addEventListener("click", action(async () => {
   saveSettings({ ...settings(), apiKey: "" });
@@ -341,13 +398,27 @@ $("#clearKey").addEventListener("click", action(async () => {
   status("Clave eliminada. Puedes introducir otra.");
 }));
 
+function closeHeaderMenus(except = null) {
+  for (const menu of document.querySelectorAll("details.header-menu")) {
+    if (menu !== except) menu.open = false;
+  }
+}
+
+document.addEventListener("click", (event) => {
+  const clickedMenu = event.target.closest("details.header-menu");
+  if (!clickedMenu) {
+    closeHeaderMenus();
+    return;
+  }
+  closeHeaderMenus(clickedMenu);
+});
+
 // init
-const s = settings();
 const savedTarget = store.get("targetLanguage", "es");
 $("#targetLanguage").value = Object.hasOwn(languages, savedTarget) ? savedTarget : "es";
-$("#key").value = s.apiKey;
+$("#key").value = "";
 updateKeyState();
-status("Listo. Abre un PDF.");
+status(session.get() ? "Clave anterior recuperada para esta sesión. Abre un PDF." : "Listo. Abre un PDF y conecta tu clave para traducir.");
 window.addEventListener("scroll", saveReadingPosition, { passive: true });
 let resizeTimer;
 window.addEventListener("resize", () => {
