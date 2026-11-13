@@ -2,42 +2,25 @@
 
 Aplicación de escritorio para leer PDF y traducir una palabra o línea sin modificar el documento original. Está construida con Tauri 2, Vite y PDF.js.
 
-## Descargar para Windows
+## Descargas
 
-[Descargar instalador para Windows x64 (.exe)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-setup.exe)
+**Versión de prueba:** la instalación y el funcionamiento aún necesitan validarse en cada plataforma.
 
-[Descargar versión portable para Windows x64 (.zip)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-portable.zip)
+[Windows x64: instalador (.exe)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-setup.exe)
 
-[Android ARM64: APK de prueba (ZIP)](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/runs/43459855172/artifacts/14055931954)
+[Windows x64: portátil (.zip)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-portable.zip)
 
-Versión de prueba · Windows sin firma digital · macOS sin firma ni notarización · Android con firma de depuración
+> Windows: sin firma digital. Windows puede mostrar una advertencia de editor desconocido. En la versión portátil, extrae el ZIP y ejecuta `traductor-pdf.exe`; requiere Microsoft Edge WebView2 Runtime.
 
-Para la versión portable, extrae el ZIP y ejecuta `traductor-pdf.exe`. Requiere Microsoft Edge WebView2 Runtime. No instala la aplicación ni crea accesos directos.
+[Android ARM64: instalador (.apk)](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases/download/android-prueba-0.1.0/TraductorPDF-Android-ARM64-prueba.apk)
 
-Las versiones actuales no están firmadas digitalmente. Windows puede mostrar una advertencia de editor desconocido ("Windows protegió tu PC"). Para instalar de todos modos: pulsa **Más información** → **Ejecutar de todas formas**.
+> Android: APK de depuración firmado con una clave de prueba. Aún no se ha verificado en un móvil o emulador. Android puede pedir permiso para instalar aplicaciones desde la fuente de descarga.
 
-Los archivos son una versión de prueba y la instalación todavía no se ha verificado. El flujo de compilación genera artefactos de macOS y Android; macOS se ofrece abajo y Android está disponible como artefacto de CI.
+[macOS: descargar desde Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/workflows/build.yml)
 
-## Descargar para macOS
+> macOS: sin firma ni notarización de Apple. Puede aparecer una advertencia de desarrollador no identificado; consulta **Privacidad y seguridad** en Ajustes del Sistema para permitir la apertura si procede. La instalación aún no se ha verificado en un Mac.
 
-La versión de prueba para macOS se genera en el flujo de compilación. Para descargarla:
-
-1. Ve a [Actions — build.yml](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/workflows/build.yml).
-2. Abre la última ejecución exitosa.
-3. Descarga el artefacto `traductor-macos-latest` (archivo `.dmg`).
-4. Ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
-
-> Es una compilación sin firma ni notarización de Apple. macOS puede mostrar una advertencia de desarrollador no identificado. Para abrirla: clic derecho → Abrir → Abrir de todos modos.
-
-## Descargar para Android
-
-La versión de prueba para móviles Android ARM64 está disponible como artefacto de GitHub Actions:
-
-[Descargar Traductor PDF para Android (ZIP con APK de prueba)](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/runs/43459855172/artifacts/14055931954)
-
-Necesitas iniciar sesión en GitHub para descargar el ZIP. Extrae el archivo y abre el APK en el móvil; Android puede pedir permiso para instalar desde la aplicación de archivos. Este artefacto es temporal y caduca el 11 de febrero de 2027.
-
-> Es una compilación de depuración, firmada con una clave de prueba. Aún no se ha verificado en un móvil ni está firmada para lanzamiento. Su instalación y la traducción requieren pruebas antes de ofrecerla como versión final.
+Para macOS, abre una ejecución exitosa de `Build applications` de la rama `main` y descarga el artefacto `traductor-macos-latest` al final de la página. GitHub requiere iniciar sesión para descargar artefactos y estos caducan. Extrae el ZIP descargado, abre el archivo `.dmg` que contiene y arrastra la aplicación a Aplicaciones. La compilación usa `macos-latest` y está dirigida a Mac con Apple silicon; no se ofrece aquí una compilación para Intel.
 
 ## Funciones y limitaciones
 
@@ -69,9 +52,9 @@ Los paquetes de Windows se generan en `src-tauri/target/release/bundle/`. Para c
 
 ## Publicaciones y compilación continua
 
-GitHub Actions ejecuta las pruebas y prepara compilaciones de Windows, macOS y Android. Los descargables de Windows de arriba se han añadido al repositorio; todavía no se ha publicado una versión en **Releases**.
+GitHub Actions ejecuta las pruebas y prepara compilaciones de Windows, macOS y Android. Los descargables de Windows están en el repositorio y el APK de prueba de Android está publicado en **Releases**.
 
-Los artefactos de CI de Android son APK de depuración y ahora se documentan arriba como descarga opcional. No hay firma de lanzamiento para Android.
+Los APK de Android son compilaciones de depuración; no hay firma de lanzamiento para Android.
 
 ## API y almacenamiento
 
@@ -96,4 +79,4 @@ Este proyecto se distribuye bajo la licencia [MIT](./LICENSE).
 
 Al enviar una etiqueta como `v0.1.0`, el workflow de release comprueba las versiones de la etiqueta, package.json, Cargo.toml y la configuración Tauri, compila Windows y macOS y crea un borrador de GitHub Release con instaladores, ZIP portable de Windows, notas generadas y SHA256SUMS.txt. El borrador debe revisarse y publicarse manualmente. Verifica los hashes con `sha256sum -c SHA256SUMS.txt`.
 
-Estos artefactos no están firmados ni notarizados y el workflow no prueba su instalación. Android sigue siendo una compilación de depuración en el workflow de CI, no un artefacto de release. Antes de publicar: probar instalación y flujo de lectura en Windows y macOS, configurar firma de Windows y firma/notarización de Apple, revisar las notas y comprobar los hashes. El portable necesita WebView2 instalado; si no abre, instala Microsoft Edge WebView2 Runtime desde Microsoft. El instalador Tauri gestiona su requisito de WebView2. No hay actualizaciones automáticas: consulta GitHub Releases para nuevas versiones.
+Estos artefactos no están firmados ni notarizados y el workflow no prueba su instalación. Android dispone de una publicación de prueba separada con un APK de depuración, no de una versión firmada para lanzamiento. Antes de publicar: probar instalación y flujo de lectura en Windows y macOS, configurar firma de Windows y firma/notarización de Apple, revisar las notas y comprobar los hashes. El portable necesita WebView2 instalado; si no abre, instala Microsoft Edge WebView2 Runtime desde Microsoft. El instalador Tauri gestiona su requisito de WebView2. No hay actualizaciones automáticas: consulta GitHub Releases para nuevas versiones.
