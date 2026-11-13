@@ -1,0 +1,35 @@
+name: Publicar APK Android de prueba
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-preview-publish.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar APK de la compilación verificada
+        uses: actions/download-artifact@v4
+        with:
+          name: traductor-android-debug
+          run-id: 43459855172
+          github-token: ${{ github.token }}
+          path: android-artifact
+      - name: Publicar APK de prueba
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(find android-artifact -type f -name '*.apk' -print0)
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "Se esperaba exactamente un APK; encontrados: ${#files[@]}"
+            exit 1
+          fi
+          cp "${files[0]}" TraductorPDF-Android-ARM64-prueba.apk
+          sha256sum TraductorPDF-Android-ARM64-prueba.apk > SHA256SUMS-Android.txt
+          gh release create android-prueba-0.1.0 TraductorPDF-Android-ARM64-prueba.apk SHA256SUMS-Android.txt --target f2dc5e7784b9111119c5310b4ff337251ad612f7 --prerelease --title "Android 0.1.0 - prueba" --notes "APK de depuración para Android ARM64, firmado con clave de prueba. Aún no se ha validado en un móvil o emulador. No es una versión final."
