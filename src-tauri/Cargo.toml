@@ -1,6 +1,6 @@
 [package]
 name = "traductor-pdf"
-version = "0.1.0"
+version = "1.0.0"
 description = "Traductor PDF multiplataforma"
 authors = ["DevOpsel"]
 edition = "2021"
