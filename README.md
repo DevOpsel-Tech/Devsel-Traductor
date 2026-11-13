@@ -20,9 +20,9 @@ Los archivos son una versión de prueba y la instalación todavía no se ha veri
 
 ## Descargar para macOS
 
-La versión de prueba para macOS se genera en el flujo de compilación y estará disponible como artefacto de GitHub Actions o en el borrador de release:
+La versión de prueba para macOS se genera en el flujo de compilación. Para descargarla:
 
-1. Ve a [Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/workflows/build.yml).
+1. Ve a [Actions — build.yml](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/workflows/build.yml).
 2. Abre la última ejecución exitosa.
 3. Descarga el artefacto `traductor-macos-latest` (archivo `.dmg`).
 4. Ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
