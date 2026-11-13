@@ -8,6 +8,10 @@ Aplicación de escritorio para leer PDF y traducir una palabra o línea sin modi
 
 [Descargar versión portable para Windows x64 (.zip)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-portable.zip)
 
+[Android ARM64: APK de prueba (ZIP)](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/runs/43459855172/artifacts/14055931954)
+
+Versión de prueba · Windows sin firma digital · Android con firma de depuración
+
 Para la versión portable, extrae el ZIP y ejecuta `traductor-pdf.exe`. Requiere Microsoft Edge WebView2 Runtime. No instala la aplicación ni crea accesos directos.
 
 Las versiones actuales no están firmadas digitalmente. Windows puede mostrar una advertencia de editor desconocido ("Windows protegió tu PC"). Para instalar de todos modos: pulsa **Más información** → **Ejecutar de todas formas**.
