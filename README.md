@@ -16,7 +16,17 @@ Para la versión portable, extrae el ZIP y ejecuta `traductor-pdf.exe`. Requiere
 
 Las versiones actuales no están firmadas digitalmente. Windows puede mostrar una advertencia de editor desconocido ("Windows protegió tu PC"). Para instalar de todos modos: pulsa **Más información** → **Ejecutar de todas formas**.
 
-Los archivos son una versión de prueba y la instalación todavía no se ha verificado. El flujo de compilación genera artefactos de macOS y Android, pero aún no se ofrecen aquí como descargas finales.
+Los archivos son una versión de prueba y la instalación todavía no se ha verificado. El flujo de compilación genera artefactos de macOS y Android; macOS se ofrece abajo y Android está disponible como artefacto de CI.
+
+## Descargar para macOS
+
+La versión de prueba para macOS se genera en el flujo de compilación y estará disponible como artefacto de GitHub Actions o en el borrador de release:
+
+1. Ve a [Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions) o [Releases](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases).
+2. Descarga el archivo `.dmg`.
+3. Ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
+
+> Es una compilación sin firma ni notarización de Apple. macOS puede mostrar una advertencia de desarrollador no identificado. Para abrirla: clic derecho → Abrir → Abrir de todos modos.
 
 ## Descargar para Android
 
