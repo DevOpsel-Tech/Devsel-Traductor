@@ -1,0 +1,67 @@
+﻿name: Prepare draft release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: node scripts/check-release-version.cjs
+      - run: npm ci
+      - run: npm test
+      - run: npm run tauri build
+      - name: Prepare Windows assets
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path release-assets | Out-Null
+          Get-ChildItem src-tauri/target/release/bundle -Recurse -File | Where-Object { $_.Extension -in '.exe', '.msi' } | Copy-Item -Destination release-assets
+          if (-not (Get-ChildItem release-assets -File | Where-Object { $_.Extension -in '.exe', '.msi' })) { throw "No se ha generado ningun instalador Windows" }
+          Compress-Archive -Path src-tauri/target/release/traductor-pdf.exe -DestinationPath release-assets/TraductorPDF-Windows-x64-portable.zip
+      - name: Prepare macOS assets
+        if: matrix.platform == 'macos'
+        run: |
+          mkdir -p release-assets
+          find src-tauri/target/release/bundle -name '*.dmg' -exec cp {} release-assets/ \;
+          test -n "$(find release-assets -name '*.dmg' -print -quit)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: release-assets/*
+          if-no-files-found: error
+  draft:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: assets
+          merge-multiple: true
+      - name: Checksums and draft
+        working-directory: assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          gh release create "$RELEASE_TAG" ./* --draft --generate-notes --title "$RELEASE_TAG"
