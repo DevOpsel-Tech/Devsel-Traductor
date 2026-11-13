@@ -28,7 +28,7 @@ npm run android:build
 
 Se han generado un instalador EXE y uno MSI para Windows x64 en `src-tauri/target/release/bundle/`; todavía no se han verificado la instalación ni el funcionamiento completo. No están firmados digitalmente. Esta carpeta está excluida de Git.
 
-El flujo de GitHub Actions está preparado para compilar Windows, macOS y Android y guardar sus artefactos, pero aún no se ha ejecutado. El APK de CI es de depuración; para distribuirlo hay que configurar la firma de lanzamiento. Android y macOS todavía necesitan verificarse en sus respectivas plataformas.
+El flujo de GitHub Actions ha compilado Windows, macOS y Android y guarda sus artefactos. El APK de CI es de depuración; para distribuirlo hay que configurar la firma de lanzamiento. Los instaladores y el funcionamiento de la aplicación todavía necesitan probarse en cada plataforma.
 
 El icono original está en `app-icon.png`; los tamaños generados por Tauri están en `src-tauri/icons/`.
 
@@ -54,3 +54,4 @@ npm run build
 ```
 
 Las pruebas no sustituyen una comprobación visual con PDFs reales ni una prueba de la API con una clave válida.
+
