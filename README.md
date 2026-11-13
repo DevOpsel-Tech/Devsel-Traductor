@@ -16,14 +16,13 @@ Los archivos son una versión de prueba y la instalación todavía no se ha veri
 
 ## Descargar para Android
 
-La compilación de Android genera un APK de depuración. Puedes obtenerlo desde los **artefactos de GitHub Actions**:
+La versión de prueba para móviles Android ARM64 está disponible como artefacto de GitHub Actions:
 
-1. Ve a [Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions).
-2. Abre el último workflow exitoso.
-3. Descarga el artefacto `traductor-android-debug` (archivo `.apk`).
-4. En tu móvil, permite instalar apps de fuentes desconocidas y abre el APK.
+[Descargar Traductor PDF para Android (ZIP con APK de prueba)](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/runs/43459855172/artifacts/14055931954)
 
-> El APK de depuración no está firmado para lanzamiento. Para una versión final se necesita firma de release (pendiente).
+Necesitas iniciar sesión en GitHub para descargar el ZIP. Extrae el archivo y abre el APK en el móvil; Android puede pedir permiso para instalar desde la aplicación de archivos. Este artefacto es temporal y caduca el 11 de febrero de 2027.
+
+> Es una compilación de depuración, firmada con una clave de prueba. Aún no se ha verificado en un móvil ni está firmada para lanzamiento. Su instalación y la traducción requieren pruebas antes de ofrecerla como versión final.
 
 ## Funciones y limitaciones
 
