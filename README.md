@@ -4,21 +4,23 @@ Aplicación de escritorio para leer PDF y traducir una palabra o línea sin modi
 
 ## Descargas
 
-**Versión de prueba:** la instalación y el funcionamiento aún necesitan validarse en cada plataforma.
+**Versión de prueba**
 
 [Windows x64: instalador (.exe)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-setup.exe)
 
 [Windows x64: portátil (.zip)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-portable.zip)
 
-> Windows: sin firma digital. Windows puede mostrar una advertencia de editor desconocido. En la versión portátil, extrae el ZIP y ejecuta `traductor-pdf.exe`; requiere Microsoft Edge WebView2 Runtime.
+Windows sin firma digital.
 
 [Android ARM64: instalador (.apk)](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases/download/android-prueba-0.1.0/TraductorPDF-Android-ARM64-prueba.apk)
 
-> Android: APK de depuración firmado con una clave de prueba. Aún no se ha verificado en un móvil o emulador. Android puede pedir permiso para instalar aplicaciones desde la fuente de descarga.
+Android con firma de depuración.
 
 [macOS: descargar desde Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/workflows/build.yml)
 
-> macOS: sin firma ni notarización de Apple. Puede aparecer una advertencia de desarrollador no identificado; consulta **Privacidad y seguridad** en Ajustes del Sistema para permitir la apertura si procede. La instalación aún no se ha verificado en un Mac.
+macOS sin firma ni notarización.
+
+La instalación y el funcionamiento aún necesitan validarse en cada plataforma. Windows puede mostrar una advertencia de editor desconocido. En la versión portátil, extrae el ZIP y ejecuta `traductor-pdf.exe`; requiere Microsoft Edge WebView2 Runtime. Android puede pedir permiso para instalar aplicaciones desde la fuente de descarga; el APK aún no se ha verificado en un móvil o emulador. En macOS puede aparecer una advertencia de desarrollador no identificado; consulta **Privacidad y seguridad** en Ajustes del Sistema para permitir la apertura si procede.
 
 Para macOS, abre una ejecución exitosa de `Build applications` de la rama `main` y descarga el artefacto `traductor-macos-latest` al final de la página. GitHub requiere iniciar sesión para descargar artefactos y estos caducan. Extrae el ZIP descargado, abre el archivo `.dmg` que contiene y arrastra la aplicación a Aplicaciones. La compilación usa `macos-latest` y está dirigida a Mac con Apple silicon; no se ofrece aquí una compilación para Intel.
 
