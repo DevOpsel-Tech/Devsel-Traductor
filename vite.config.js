@@ -1,15 +1,17 @@
+import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig, loadEnv } from "vite";
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-
-  return {
-    plugins: [tailwindcss()],
-    server: {
-      proxy: {
-        "/api": `http://127.0.0.1:${env.PORT ?? "3000"}`,
-      },
-    },
-  };
+export default defineConfig({
+  plugins: [tailwindcss()],
+  clearScreen: false,
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
+  envPrefix: ["VITE_", "TAURI_"],
+  build: {
+    target: "esnext",
+    minify: false,
+    sourcemap: !!process.env.TAURI_DEBUG,
+  },
 });
