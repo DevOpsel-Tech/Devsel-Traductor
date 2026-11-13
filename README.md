@@ -8,6 +8,10 @@ Aplicación de escritorio para leer PDF y traducir una palabra o línea sin modi
 
 [Descargar versión portable para Windows x64 (.zip)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-portable.zip)
 
+[Android ARM64: APK de prueba (ZIP)](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/runs/43459855172/artifacts/14055931954)
+
+Versión de prueba · Windows sin firma digital · Android con firma de depuración
+
 Para la versión portable, extrae el ZIP y ejecuta `traductor-pdf.exe`. Requiere Microsoft Edge WebView2 Runtime. No instala la aplicación ni crea accesos directos.
 
 Las versiones actuales no están firmadas digitalmente. Windows puede mostrar una advertencia de editor desconocido ("Windows protegió tu PC"). Para instalar de todos modos: pulsa **Más información** → **Ejecutar de todas formas**.
@@ -16,14 +20,13 @@ Los archivos son una versión de prueba y la instalación todavía no se ha veri
 
 ## Descargar para Android
 
-La compilación de Android genera un APK de depuración. Puedes obtenerlo desde los **artefactos de GitHub Actions**:
+La versión de prueba para móviles Android ARM64 está disponible como artefacto de GitHub Actions:
 
-1. Ve a [Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions).
-2. Abre el último workflow exitoso.
-3. Descarga el artefacto `traductor-android-debug` (archivo `.apk`).
-4. En tu móvil, permite instalar apps de fuentes desconocidas y abre el APK.
+[Descargar Traductor PDF para Android (ZIP con APK de prueba)](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/runs/43459855172/artifacts/14055931954)
 
-> El APK de depuración no está firmado para lanzamiento. Para una versión final se necesita firma de release (pendiente).
+Necesitas iniciar sesión en GitHub para descargar el ZIP. Extrae el archivo y abre el APK en el móvil; Android puede pedir permiso para instalar desde la aplicación de archivos. Este artefacto es temporal y caduca el 11 de febrero de 2027.
+
+> Es una compilación de depuración, firmada con una clave de prueba. Aún no se ha verificado en un móvil ni está firmada para lanzamiento. Su instalación y la traducción requieren pruebas antes de ofrecerla como versión final.
 
 ## Funciones y limitaciones
 
@@ -61,7 +64,7 @@ Los artefactos de CI de Android son APK de depuración y ahora se documentan arr
 
 ## API y almacenamiento
 
-Elige un proveedor en **Conectar API** e introduce su clave. La clave se mantiene solo en memoria durante la sesión y debe introducirse de nuevo al reiniciar o cambiar de proveedor. Una clave de Gemini guardada por una versión anterior se traslada a memoria y se elimina de la configuración local al arrancar. Los PDF se guardan en el almacenamiento local del WebView. Para detectar el idioma se envía una muestra de texto al proveedor elegido; al traducir, también se envía el texto seleccionado. OpenRouter puede enviar el texto al proveedor del modelo que seleccione. No introduzcas claves en el código ni en incidencias públicas.
+Elige un proveedor en **Conectar API** e introduce su clave. La clave se guarda en el almacenamiento seguro del sistema operativo (Keychain en macOS, Credential Manager en Windows y el almacén del sistema en Linux) y se reutiliza al abrir la aplicación sin dejarla en texto plano ni en localStorage. Si existe una clave antigua guardada en la configuración local, se migra a memoria y se elimina del almacenamiento anterior al arrancar. Los PDF se guardan en el almacenamiento local del WebView. Para detectar el idioma se envía una muestra de texto al proveedor elegido; al traducir, también se envía el texto seleccionado. OpenRouter puede enviar el texto al proveedor del modelo que seleccione. No introduzcas claves en el código ni en incidencias públicas.
 
 Consulta los detalles y opciones para borrar datos en [PRIVACY.md](./PRIVACY.md).
 

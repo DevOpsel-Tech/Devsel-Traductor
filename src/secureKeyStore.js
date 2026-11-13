@@ -10,15 +10,18 @@ async function invokeSafe(command, payload = {}) {
 
 export async function readStoredApiKey() {
   const value = await invokeSafe("get_api_key");
-  return typeof value === "string" ? value : "";
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && typeof value.value === "string") return value.value;
+  return "";
 }
 
 export async function writeStoredApiKey(value) {
-  if (!value || !value.trim()) {
+  const next = typeof value === "string" ? value.trim() : "";
+  if (!next) {
     await invokeSafe("clear_api_key");
     return;
   }
-  await invokeSafe("save_api_key", { value: value.trim() });
+  await invokeSafe("save_api_key", { value: next });
 }
 
 export async function clearStoredApiKey() {

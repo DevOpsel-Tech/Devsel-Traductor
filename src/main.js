@@ -6,6 +6,7 @@ import { translateWithOpenRouter, detectSourceLanguage, defaultEndpoint, default
 import { deleteDocument, getDocument, listDocuments, saveDocument } from "./documentLibrary.js";
 import { groupTextLines, fittingFontSize } from "./pdfLayout.js";
 import { createSessionKey, validatePdf } from "./session.js";
+import { clearStoredApiKey, readStoredApiKey, writeStoredApiKey } from "./secureKeyStore.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -25,14 +26,18 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
-const session = createSessionKey(localStorage, defaultEndpoint);
+const session = createSessionKey(localStorage, defaultEndpoint, {
+  read: readStoredApiKey,
+  write: writeStoredApiKey,
+  clear: clearStoredApiKey,
+});
 let activeProvider = "gemini";
 const settings = () => ({ apiKey: session.get(), ...providers[activeProvider] });
 const saveSettings = (s) => { session.set(s.apiKey); };
 function updateKeyState() {
   $("#keyState").textContent = session.get()
-    ? "Clave disponible durante esta sesión; conexión sin verificar."
-    : "No hay ninguna clave activa. Se solicitará de nuevo al cerrar la aplicación.";
+    ? "Clave disponible en tu almacenamiento seguro del sistema."
+    : "No hay ninguna clave activa. Introduce una para guardarla de forma segura.";
 }
 function saveReadingPosition() {
   if (currentDocumentId && pdf) {
@@ -51,15 +56,20 @@ async function render() {
   const reader = $(".reader-area");
   const readerStyle = getComputedStyle(reader);
   const horizontalPadding = parseFloat(readerStyle.paddingLeft) + parseFloat(readerStyle.paddingRight);
-  const availableWidth = Math.max(100, reader.clientWidth - horizontalPadding - 28);
-  const baseScale = Math.min(1.3, availableWidth / unscaled.width);
+  const availableWidth = Math.max(100, reader.clientWidth - horizontalPadding);
+  const baseScale = availableWidth / unscaled.width;
   const vp = page.getViewport({ scale: baseScale * zoom });
   const wrapper = $("#pdfPage");
-  wrapper.style.width = `${vp.width}px`; wrapper.style.height = `${vp.height}px`;
+  wrapper.style.width = `${vp.width}px`;
+  wrapper.style.height = `${vp.height}px`;
   wrapper.style.setProperty("--scale-factor", vp.scale);
   $("#text").replaceChildren(); $("#lineControls").replaceChildren(); $("#translationOverlays").replaceChildren();
   wrapper.hidden = false;
-  const canvas = $("#canvas"); canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+  const canvas = $("#canvas");
+  canvas.width = Math.ceil(vp.width);
+  canvas.height = Math.ceil(vp.height);
+  canvas.style.width = `${vp.width}px`;
+  canvas.style.height = `${vp.height}px`;
   await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
   const tc = await page.getTextContent();
   await new pdfjs.TextLayer({ textContentSource: tc, container: $("#text"), viewport: vp }).render();
@@ -225,7 +235,7 @@ function createLineControl(text, key, box) {
   button.textContent = "文"; button.title = "Traducir línea"; button.setAttribute("aria-label", `Traducir línea: ${text}`);
   button.setAttribute("aria-pressed", "false");
   button.style.top = `${box.top + box.height / 2}px`;
-  button.style.left = `${Math.min(box.left + box.width + 4, $("#pdfPage").clientWidth + 4)}px`;
+  button.style.left = `${box.left + box.width + 4}px`;
   const result = document.createElement("button");
   result.type = "button";
   result.className = "translation-overlay translation-detail-trigger";
@@ -351,7 +361,7 @@ $("#settings").addEventListener("click", action(async () => {
   saveSettings({ apiKey });
   $("#key").value = "";
   updateKeyState();
-  status("Clave activa para esta sesión. La conexión todavía no se ha comprobado.");
+  status("Clave guardada de forma segura en tu equipo.");
   $("#settings").closest("details").open = false;
   if (pdf) void detectDocumentLanguage(pdf);
 }));
@@ -389,36 +399,55 @@ $("#provider").addEventListener("change", action(async () => {
 }));
 
 $("#clearKey").addEventListener("click", action(async () => {
-  saveSettings({ ...settings(), apiKey: "" });
+  session.clear();
   detectionVersion++;
   $("#sourceLanguage").textContent = pdf ? "Origen: conecta una API" : "Origen: pendiente";
   $("#key").value = "";
   updateKeyState();
   $("#key").focus();
-  status("Clave eliminada. Puedes introducir otra.");
+  status("Clave eliminada del almacenamiento seguro. Puedes introducir otra.");
 }));
 
 function closeHeaderMenus(except = null) {
   for (const menu of document.querySelectorAll("details.header-menu")) {
-    if (menu !== except) menu.open = false;
+    if (menu !== except) menu.removeAttribute("open");
   }
 }
 
+document.querySelectorAll("details.header-menu > summary").forEach((summary) => {
+  summary.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const details = summary.closest("details.header-menu");
+    const wasOpen = details.hasAttribute("open");
+    closeHeaderMenus();
+    if (!wasOpen) {
+      details.setAttribute("open", "");
+    }
+  });
+});
+
 document.addEventListener("click", (event) => {
-  const clickedMenu = event.target.closest("details.header-menu");
-  if (!clickedMenu) {
+  const closeBtn = event.target.closest(".close-panel-btn");
+  if (closeBtn) {
     closeHeaderMenus();
     return;
   }
-  closeHeaderMenus(clickedMenu);
+  const insidePanel = event.target.closest(".header-panel");
+  if (insidePanel) {
+    return;
+  }
+  closeHeaderMenus();
 });
 
 // init
 const savedTarget = store.get("targetLanguage", "es");
 $("#targetLanguage").value = Object.hasOwn(languages, savedTarget) ? savedTarget : "es";
 $("#key").value = "";
-updateKeyState();
-status(session.get() ? "Clave anterior recuperada para esta sesión. Abre un PDF." : "Listo. Abre un PDF y conecta tu clave para traducir.");
+void session.hydrate().then(() => {
+  updateKeyState();
+  status(session.get() ? "Clave recuperada desde tu almacenamiento seguro. Abre un PDF." : "Listo. Abre un PDF y conecta tu clave para traducir.");
+});
 window.addEventListener("scroll", saveReadingPosition, { passive: true });
 let resizeTimer;
 window.addEventListener("resize", () => {

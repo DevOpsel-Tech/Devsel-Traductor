@@ -1,11 +1,34 @@
-﻿export function createSessionKey(storage, endpoint) {
+﻿export function createSessionKey(storage, endpoint, persist = null) {
   let key = "";
   try {
-    const saved = JSON.parse(storage.getItem("settings") || "{}");
+    const saved = JSON.parse((storage && typeof storage.getItem === "function" ? storage.getItem("settings") : null) || "{}");
     if (saved && saved.endpoint === endpoint && typeof saved.apiKey === "string") key = saved.apiKey;
   } catch { /* Ignore malformed legacy settings. */ }
-  storage.removeItem("settings");
-  return { get: () => key, set: (value) => { key = value; } };
+  if (storage && typeof storage.removeItem === "function") storage.removeItem("settings");
+
+  return {
+    get: () => key,
+    set: (value) => {
+      key = typeof value === "string" ? value : "";
+      if (persist && typeof persist.write === "function") {
+        void persist.write(key);
+      }
+      return key;
+    },
+    clear: () => {
+      key = "";
+      if (persist && typeof persist.clear === "function") {
+        void persist.clear();
+      }
+      return key;
+    },
+    hydrate: async () => {
+      if (!persist || typeof persist.read !== "function") return key;
+      const persisted = await persist.read();
+      if (typeof persisted === "string") key = persisted;
+      return key;
+    }
+  };
 }
 
 export function validatePdf(bytes) {
