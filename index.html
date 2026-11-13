@@ -3,23 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>Traductor PDF</title>
 </head>
-<body class="bg-[#f7f5f0] text-[#1f2a3a] min-h-screen antialiased">
+<body class="bg-[#F4F1EA] text-[#172D4D] min-h-screen antialiased">
   <div id="app" class="flex flex-col min-h-screen">
 
     <!-- Header -->
-    <header class="sticky top-0 z-40 bg-[#4a6fa5] text-[#f7f5f0] shadow-md backdrop-blur">
+    <header class="sticky top-0 z-40 bg-[#172D4D] text-[#F4F1EA] shadow-md backdrop-blur">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-xl">📘</div>
+        <div class="brand-header flex items-center gap-3">
+          <div class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19.5 13.4C15.5 10.4 11.3 10 6.5 11.5v14c4.8-1.5 9-1.1 13 1.9V13.4Z" fill="currentColor" opacity=".92"/>
+              <path d="M22 13.4c3.9-3 8.1-3.4 12.5-1.9v14c-4.4-1.5-8.6-1.1-12.5 1.9v-14Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M25.4 16.6h5.4m-5.4 3.5h3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
           <div>
             <h1 class="text-lg font-bold leading-tight tracking-tight">Traductor PDF</h1>
             <p class="text-xs text-white/70 leading-tight">Lector y traductor de PDF</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="header-actions flex items-center gap-2 flex-wrap">
           <div class="language-controls">
             <span id="sourceLanguage" aria-live="polite" title="Se envía una muestra de páginas representativas a la API para estimar el idioma.">Origen: pendiente</span>
             <label for="targetLanguage">Traducir a</label>
@@ -49,19 +56,39 @@
           </div>
           <details id="libraryMenu" class="header-menu">
             <summary class="cursor-pointer bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm font-medium">PDF guardados</summary>
-            <div class="header-panel"><div id="documentList" class="document-list"></div></div>
+            <div class="header-panel">
+              <div class="header-panel-header">
+                <span class="header-panel-title">PDF guardados</span>
+                <button type="button" class="close-panel-btn" aria-label="Cerrar panel">✕</button>
+              </div>
+              <div id="documentList" class="document-list"></div>
+            </div>
           </details>
-          <details class="header-menu">
+          <details id="apiMenu" class="header-menu">
             <summary class="cursor-pointer bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
               <span>🔑</span> Conectar API
             </summary>
             <div class="header-panel">
-              <p class="api-key-state">Pega tu clave de Gemini para usar el traductor.</p>
-              <label for="key" class="text-xs font-semibold text-[#4a6fa5] uppercase tracking-wide">Clave de API</label>
+              <div class="header-panel-header">
+                <span class="header-panel-title">🔑 Configurar API</span>
+                <button type="button" class="close-panel-btn" aria-label="Cerrar panel">✕</button>
+              </div>
+              <p class="api-key-state">Elige tu proveedor y pega su clave de API. Solo se conserva durante esta sesión. Las solicitudes pueden tener coste.</p>
+              <label for="provider" class="text-xs font-semibold text-[#172D4D] uppercase tracking-wide">Proveedor</label>
+              <select id="provider">
+                <option value="gemini">Google Gemini</option>
+                <option value="openai">OpenAI (ChatGPT)</option>
+                <option value="anthropic">Anthropic Claude</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="mistral">Mistral</option>
+                <option value="groq">Groq</option>
+              </select>
+              <label for="key" class="text-xs font-semibold text-[#172D4D] uppercase tracking-wide">Clave de API</label>
               <input id="key" type="password" placeholder="Clave de API" autocomplete="off" />
               <p id="keyState" class="api-key-state"></p>
               <button id="testKey" type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium">Probar conexión</button>
-              <button id="settings" type="button" class="bg-[#e8743b] hover:bg-[#d4622a] text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+              <button id="settings" type="button" class="bg-[#B58A45] hover:bg-[#D2AF6C] text-[#172D4D] px-3 py-2 rounded-lg text-sm font-medium transition">
                 Guardar conexión
               </button>
               <button id="clearKey" type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium">Borrar clave</button>
@@ -78,14 +105,22 @@
 
         <!-- Toolbar -->
         <p id="status" class="reader-status" role="status"></p>
+        <p class="reader-help">Para empezar, abre un PDF con texto seleccionable y conecta la clave de tu proveedor. Se envía una muestra para detectar el idioma y el texto que solicites traducir.</p>
         <p id="readerHelp" class="reader-help" hidden>Pulsa 文 para traducir una línea o pulsa una palabra. Vuelve a pulsar para ver el original.</p>
+        <dialog id="translationDialog" class="translation-dialog" aria-labelledby="translationDialogTitle">
+          <div class="translation-dialog-header">
+            <h2 id="translationDialogTitle">Traducción completa</h2>
+            <button id="closeTranslationDialog" type="button">Cerrar</button>
+          </div>
+          <p id="translationDialogText"></p>
+        </dialog>
         <div class="relative flex items-center justify-center gap-3 flex-wrap">
           <div class="flex items-center gap-2">
-            <button id="prev" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1">
+            <button id="prev" class="page-navigation-button">
               ◀ Anterior
             </button>
             <span id="page" class="text-sm font-semibold text-gray-500 min-w-[60px] text-center">0 / 0</span>
-            <button id="next" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1">
+            <button id="next" class="page-navigation-button">
               Siguiente ▶
             </button>
           </div>
@@ -111,7 +146,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[#4a6fa5] text-[#f7f5f0] text-center text-xs py-4 mt-auto">
+    <footer class="bg-[#172D4D] text-[#F4F1EA] text-center text-xs py-4 mt-auto">
       <div class="max-w-6xl mx-auto px-4">
         <div class="opacity-90">© 2026 DevOpsel. Todos los derechos reservados. · Traductor PDF</div>
       </div>
