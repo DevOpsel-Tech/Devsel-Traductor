@@ -1,57 +1,67 @@
 # Traductor PDF
 
-Prototipo de lector PDF en Tauri 2 y Vite. Abre un PDF con texto seleccionable y muestra la traducción sobre la línea o palabra original. Se pueden mantener varias traducciones de línea abiertas. El idioma de destino se elige en la cabecera. Al abrir un documento con la API configurada se envía una muestra de páginas representativas para estimar y mostrar el idioma principal; la detección puede fallar y consume una solicitud adicional.
+Aplicación de escritorio para leer PDF y traducir una palabra o línea sin modificar el documento original. Está construida con Tauri 2, Vite y PDF.js.
 
-Los PDFs abiertos se guardan localmente en la biblioteca del WebView (IndexedDB) y se pueden volver a abrir desde **PDF guardados**. El botón **Cerrar PDF** cierra el libro actual sin borrarlo de la biblioteca.
+## Descargar para Windows
 
-Al recargar, la aplicación intenta recuperar el documento abierto, la página, el aumento y la posición de lectura. Las traducciones mostradas no se conservan al recargar.
+[Descargar instalador para Windows x64 (.exe)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-setup.exe)
 
-## Requisitos
+[Descargar versión portable para Windows x64 (.zip)](https://github.com/DevOpsel-Tech/Devsel-Traductor/raw/refs/heads/main/downloads/TraductorPDF-Windows-x64-portable.zip)
 
-- Node.js, Rust y los [requisitos de Tauri para Windows](https://tauri.app/start/prerequisites/), incluidos Microsoft C++ Build Tools y WebView2.
-- Una clave de la API de Gemini para traducir.
+Para la versión portable, extrae el ZIP y ejecuta `traductor-pdf.exe`. Requiere Microsoft Edge WebView2 Runtime. No instala la aplicación ni crea accesos directos.
+
+Las versiones actuales no están firmadas digitalmente. Windows puede mostrar una advertencia de editor desconocido.
+
+Los archivos son una versión de prueba y la instalación todavía no se ha verificado. El flujo de compilación genera artefactos de macOS y Android, pero aún no se ofrecen aquí como descargas finales.
+
+## Funciones y limitaciones
+
+- Abre PDF con texto seleccionable, guarda documentos localmente y recuerda la posición de lectura.
+- Traduce palabras o líneas al idioma elegido y estima el idioma principal a partir de páginas representativas.
+- Requiere conexión a Internet y una clave propia de Gemini. Google aplica sus límites y condiciones.
+- Los PDF escaneados sin texto seleccionable necesitan OCR, que todavía no está integrado.
+- Las traducciones se superponen en pantalla; la aplicación no modifica ni exporta un PDF traducido.
+
+Consulta [Privacidad](./PRIVACY.md) antes de usar documentos sensibles.
+
+## Ejecutar desde el código fuente
+
+Requisitos:
+
+- Node.js 24.
+- Rust estable y los requisitos de compilación de [Tauri para Windows](https://tauri.app/start/prerequisites/), incluido Microsoft C++ Build Tools.
+- Microsoft Edge WebView2 Runtime.
 
 ```sh
 npm ci
+npm test
 npm run tauri dev
 npm run tauri build
 ```
 
-En Windows el comando genera los instaladores configurados; en macOS se ejecuta desde un Mac con las herramientas de Xcode. Para Android, instala Android Studio con SDK, NDK y Java, configura `ANDROID_HOME` y `NDK_HOME`, y ejecuta:
+Los paquetes de Windows se generan en `src-tauri/target/release/bundle/`. Para compilar macOS se necesita macOS y Xcode. Las versiones de `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json` deben coincidir.
 
-```sh
-npm run android:init
-npm run tauri icon app-icon.png
-npm run android:dev
-npm run android:build
-```
+## Publicaciones y compilación continua
 
-Se han generado un instalador EXE y uno MSI para Windows x64 en `src-tauri/target/release/bundle/`; todavía no se han verificado la instalación ni el funcionamiento completo. No están firmados digitalmente. Esta carpeta está excluida de Git.
+GitHub Actions ejecuta las pruebas y prepara compilaciones de Windows, macOS y Android. Los descargables de Windows de arriba se han añadido al repositorio; todavía no se ha publicado una versión en **Releases**.
 
-El flujo de GitHub Actions ha compilado Windows, macOS y Android y guarda sus artefactos. El APK de CI es de depuración; para distribuirlo hay que configurar la firma de lanzamiento. Los instaladores y el funcionamiento de la aplicación todavía necesitan probarse en cada plataforma.
+Los artefactos de CI de Android son APK de depuración y no forman parte de las publicaciones de escritorio. No hay firma de lanzamiento para Android.
 
-El icono original está en `app-icon.png`; los tamaños generados por Tauri están en `src-tauri/icons/`.
+## API y almacenamiento
 
-## Conexión de la API
+La clave de Gemini se guarda en el almacenamiento local de la aplicación sin cifrado específico. Los PDF se guardan en el almacenamiento local del WebView. Para detectar el idioma se envía una muestra de texto del documento a Gemini; al traducir, también se envía el texto seleccionado. No introduzcas claves en el código ni en incidencias públicas.
 
-En **Conectar API**, introduce y guarda tu clave de Gemini. La aplicación usa el endpoint compatible de Gemini con `gemini-3.5-flash-lite`. Los costes y límites dependen del plan y proyecto de Google.
+Consulta los detalles y opciones para borrar datos en [PRIVACY.md](./PRIVACY.md).
 
-La clave se guarda actualmente en el almacenamiento local del WebView, sin cifrado específico. No se ha verificado una llamada real con la clave del usuario.
-
-## Limitaciones actuales
-
-- La traducción requiere red; el motor offline aún no está integrado en la interfaz.
-- Los PDFs escaneados sin texto seleccionable necesitan OCR, que todavía no está integrado.
-- Las traducciones superpuestas se ajustan al espacio disponible y pueden verse pequeñas o abreviadas. En PDF con fondos, columnas o diseños complejos la colocación puede no ser precisa. El PDF guardado no se modifica.
-- Los comandos Rust de almacenamiento y caché existen, pero la interfaz actual no los utiliza. La caché persistente y la exportación de PDF modificado están pendientes de integración.
-- La alineación de controles y las llamadas reales a Gemini requieren pruebas en la aplicación Windows.
-
-## Comprobaciones
+## Pruebas
 
 ```sh
 npm test
 npm run build
 ```
 
-Las pruebas no sustituyen una comprobación visual con PDFs reales ni una prueba de la API con una clave válida.
+Las pruebas automatizadas no sustituyen la comprobación de los instaladores en Windows/macOS ni una prueba real de conexión con Gemini.
 
+## Licencia
+
+Este proyecto se distribuye bajo la licencia [MIT](./LICENSE).
