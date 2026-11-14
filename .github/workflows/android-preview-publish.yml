@@ -10,19 +10,35 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BUILD_SHA: d5c6c24808f4e69502080679d5eb1c3d4ccb70fb
     steps:
-      - name: Descargar APK de la compilación verificada
-        uses: actions/download-artifact@v4
-        with:
-          name: traductor-android-debug
-          run-id: 43459855172
-          github-token: ${{ github.token }}
-          path: android-artifact
+      - name: Esperar y descargar la compilación Android verificada
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..100}; do
+            run_id=$(gh run list --workflow build.yml --commit "$BUILD_SHA" --json databaseId --jq '.[0].databaseId // empty')
+            if [ -n "$run_id" ]; then
+              job=$(gh api "repos/$GH_REPO/actions/runs/$run_id/jobs" --jq '.jobs[] | select(.name == "android") | [.status, (.conclusion // "")] | @tsv')
+              if [[ "$job" == $'completed\tsuccess' ]]; then
+                gh run download "$run_id" --name traductor-android-debug --dir android-artifact
+                exit 0
+              fi
+              if [[ "$job" == completed* ]]; then
+                echo "La compilación Android falló: $job"
+                exit 1
+              fi
+            fi
+            sleep 15
+          done
+          echo "No terminó la compilación Android a tiempo."
+          exit 1
       - name: Publicar APK de prueba
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           mapfile -d '' files < <(find android-artifact -type f -name '*.apk' -print0)
@@ -32,4 +48,4 @@ jobs:
           fi
           cp "${files[0]}" TraductorPDF-Android-ARM64-prueba.apk
           sha256sum TraductorPDF-Android-ARM64-prueba.apk > SHA256SUMS-Android.txt
-          gh release create android-prueba-0.1.0 TraductorPDF-Android-ARM64-prueba.apk SHA256SUMS-Android.txt --target f2dc5e7784b9111119c5310b4ff337251ad612f7 --prerelease --title "Android 0.1.0 - prueba" --notes "APK de depuración para Android ARM64, firmado con clave de prueba. Aún no se ha validado en un móvil o emulador. No es una versión final."
+          gh release create android-prueba-d5c6c24 TraductorPDF-Android-ARM64-prueba.apk SHA256SUMS-Android.txt --target "$BUILD_SHA" --prerelease --title "Android - paneles móviles" --notes "APK ARM64 de prueba con paneles adaptados a móviles. Firma de depuración; aún no se ha validado en un dispositivo."
