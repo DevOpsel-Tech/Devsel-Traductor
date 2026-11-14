@@ -12,17 +12,29 @@ Aplicación de escritorio para leer PDF y traducir una palabra o línea sin modi
 
 Windows sin firma digital.
 
+<<<<<<< HEAD
 [Android ARM64: instalador (.apk)](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/runs/43574397935/artifacts/14106435296)
 
 Android con firma de depuración.
 
 [macOS: descargar desde Actions](https://github.com/DevOpsel-Tech/Devsel-Traductor/actions/workflows/build.yml)
+=======
+[Android ARM64: instalador (.apk)](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases/download/android-prueba-0.1.0/TraductorPDF-Android-ARM64-prueba.apk)
+
+Android con firma de depuración.
+
+[macOS Apple silicon: descargar ZIP](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases/download/macos-prueba-0.1.0/TraductorPDF-macOS-Apple-silicon-prueba.zip)
+>>>>>>> b40cef66dd78d9a74c5f29066c1d67b388bacc5c
 
 macOS sin firma ni notarización.
 
 La instalación y el funcionamiento aún necesitan validarse en cada plataforma. Windows puede mostrar una advertencia de editor desconocido. En la versión portátil, extrae el ZIP y ejecuta `traductor-pdf.exe`; requiere Microsoft Edge WebView2 Runtime. Android puede pedir permiso para instalar aplicaciones desde la fuente de descarga; el APK aún no se ha verificado en un móvil o emulador. En macOS puede aparecer una advertencia de desarrollador no identificado; consulta **Privacidad y seguridad** en Ajustes del Sistema para permitir la apertura si procede.
 
+<<<<<<< HEAD
 Para macOS, abre una ejecución exitosa de `Build applications` de la rama `main` y descarga el artefacto `traductor-macos-latest` al final de la página. GitHub requiere iniciar sesión para descargar artefactos y estos caducan. Extrae el ZIP descargado, abre el archivo `.dmg` que contiene y arrastra la aplicación a Aplicaciones. La compilación usa `macos-latest` y está dirigida a Mac con Apple silicon; no se ofrece aquí una compilación para Intel.
+=======
+Para macOS, extrae el ZIP descargado, abre el archivo `.dmg` que contiene y arrastra la aplicación a Aplicaciones. Esta compilación está dirigida a Mac con Apple silicon; no se ofrece aquí una compilación para Intel.
+>>>>>>> b40cef66dd78d9a74c5f29066c1d67b388bacc5c
 
 ## Funciones y limitaciones
 
