@@ -475,7 +475,6 @@ footer details summary { display: inline-block; }
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
-    max-height: calc(100vh - env(safe-area-inset-top, 0px)) !important;
     max-height: calc(100dvh - env(safe-area-inset-top, 0px)) !important;
     overflow-y: auto !important;
     overscroll-behavior: contain;
@@ -486,8 +485,40 @@ footer details summary { display: inline-block; }
     z-index: 9999 !important;
   }
   .header-panel-header { display: flex; }
+  .header-panel > * { flex-shrink: 0; }
   .close-panel-btn { min-width: 44px; min-height: 44px; }
   .header-panel input, .header-panel select { width: 100%; min-width: 0; font-size: 1rem; }
   .header-panel button, .document-list button { min-height: 44px; }
   .document-list { max-height: none; overflow: visible; }
 }
+
+/* On phones the open menu takes its own row, so it pushes the reader down. */
+@media (max-width: 600px), (max-height: 500px) {
+  header > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: .5rem !important;
+  }
+  .header-actions {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+  .header-menu[open] {
+    order: 1;
+    flex: 1 0 100% !important;
+    width: 100% !important;
+  }
+  .header-panel {
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    margin-top: .5rem;
+    padding: .875rem !important;
+    overflow: visible !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px var(--shadow) !important;
+  }
+}
+
