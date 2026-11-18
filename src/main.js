@@ -219,17 +219,35 @@ function createLineControl(text, key, box) {
   const button = document.createElement("button"); button.type = "button"; button.className = "translation-line-button";
   button.textContent = "文"; button.title = "Traducir línea"; button.setAttribute("aria-label", `Traducir línea: ${text}`);
   button.setAttribute("aria-pressed", "false");
+
+  // Adapt size and position dynamically based on line height and scale
+  const btnSize = Math.max(13, Math.min(26, Math.round(box.height * 0.88)));
+  button.style.width = `${btnSize}px`;
+  button.style.height = `${btnSize}px`;
+  button.style.fontSize = `${Math.max(8, Math.round(btnSize * 0.62))}px`;
   button.style.top = `${box.top + box.height / 2}px`;
-  button.style.left = `${Math.min(box.left + box.width + 4, $("#pdfPage").clientWidth + 4)}px`;
+  button.style.right = `-${btnSize + 5}px`;
+
   const result = document.createElement("div"); result.className = "translation-overlay"; result.setAttribute("role", "status"); result.hidden = true;
   result.addEventListener("click", () => status(result.textContent));
   Object.assign(result.style, { left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px` });
   const existing = translations.get(key);
-  if (existing) { showOverlayText(result, existing, box); button.classList.add("translated"); button.setAttribute("aria-pressed", "true"); }
+  if (existing) {
+    showOverlayText(result, existing, box);
+    button.classList.add("translated");
+    button.setAttribute("aria-pressed", "true");
+    button.textContent = "✓";
+  }
   let request = 0;
   button.addEventListener("click", action(async () => {
     if (!result.hidden || button.getAttribute("aria-busy") === "true") {
-      request++; result.hidden = true; translations.delete(key); button.classList.remove("translated"); button.setAttribute("aria-pressed", "false"); button.removeAttribute("aria-busy");
+      request++;
+      result.hidden = true;
+      translations.delete(key);
+      button.classList.remove("translated");
+      button.setAttribute("aria-pressed", "false");
+      button.removeAttribute("aria-busy");
+      button.textContent = "文";
       return;
     }
     const { apiKey, endpoint = defaultEndpoint, model = defaultModel } = settings();
@@ -240,9 +258,17 @@ function createLineControl(text, key, box) {
     try {
       const translated = await translateWithOpenRouter(text, apiKey, fetch, endpoint, model, $("#targetLanguage").value);
       if (current !== request || currentLanguage !== languageVersion || !button.isConnected) return;
-      showOverlayText(result, translated, box); translations.set(key, translated); button.classList.add("translated"); button.setAttribute("aria-pressed", "true");
+      showOverlayText(result, translated, box);
+      translations.set(key, translated);
+      button.classList.add("translated");
+      button.setAttribute("aria-pressed", "true");
+      button.textContent = "✓";
     } catch (error) {
-      if (current === request && button.isConnected) { result.hidden = true; button.classList.remove("translated"); }
+      if (current === request && button.isConnected) {
+        result.hidden = true;
+        button.classList.remove("translated");
+        button.textContent = "文";
+      }
       throw error;
     } finally {
       if (current === request) button.removeAttribute("aria-busy");
@@ -367,4 +393,36 @@ async function restoreReading() {
   if (!saved) { localStorage.removeItem("readingPosition"); return; }
   await openDocument(saved.name, saved.bytes, false, saved.id, position);
 }
+// Modals and dropdowns behavior
+document.addEventListener("click", (e) => {
+  for (const menu of document.querySelectorAll(".header-menu[open]")) {
+    const panel = menu.querySelector(".header-panel");
+    const summary = menu.querySelector("summary");
+    if (panel && !panel.contains(e.target) && !summary.contains(e.target)) {
+      menu.open = false;
+    }
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    for (const menu of document.querySelectorAll(".header-menu[open]")) menu.open = false;
+  }
+});
+for (const menu of document.querySelectorAll(".header-menu")) {
+  menu.addEventListener("toggle", () => {
+    if (menu.open) {
+      for (const other of document.querySelectorAll(".header-menu[open]")) {
+        if (other !== menu) other.open = false;
+      }
+    }
+  });
+}
+for (const closeBtn of document.querySelectorAll(".panel-close")) {
+  closeBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const menu = closeBtn.closest(".header-menu");
+    if (menu) menu.open = false;
+  });
+}
+
 restoreReading().catch(() => status("No se pudo restaurar el PDF guardado."));

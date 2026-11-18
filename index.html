@@ -2,24 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="icon" type="image/png" href="/app-icon.png" />
   <title>Traductor PDF</title>
 </head>
 <body class="bg-[#f7f5f0] text-[#1f2a3a] min-h-screen antialiased">
   <div id="app" class="flex flex-col min-h-screen">
 
     <!-- Header -->
-    <header class="sticky top-0 z-40 bg-[#4a6fa5] text-[#f7f5f0] shadow-md backdrop-blur">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-xl">📘</div>
+    <header class="sticky top-0 z-40 bg-[#4a6fa5] text-[#f7f5f0] shadow-md">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap header-content">
+        <div class="flex items-center gap-3 header-brand">
+          <img src="/app-icon.png" alt="Icono Traductor PDF" class="w-9 h-9 rounded-lg object-contain bg-white/15 p-0.5 shadow-sm" />
           <div>
             <h1 class="text-lg font-bold leading-tight tracking-tight">Traductor PDF</h1>
             <p class="text-xs text-white/70 leading-tight">Lector y traductor de PDF</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap header-actions">
           <div class="language-controls">
             <span id="sourceLanguage" aria-live="polite" title="Se envía una muestra de páginas representativas a la API para estimar el idioma.">Origen: pendiente</span>
             <label for="targetLanguage">Traducir a</label>
@@ -48,23 +49,41 @@
             <button id="zoomIn" type="button" aria-label="Ampliar página">+</button>
           </div>
           <details id="libraryMenu" class="header-menu">
-            <summary class="cursor-pointer bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm font-medium">PDF guardados</summary>
-            <div class="header-panel"><div id="documentList" class="document-list"></div></div>
+            <summary class="cursor-pointer bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
+              <span>📁</span> PDF guardados
+            </summary>
+            <div class="header-panel">
+              <div class="panel-header">
+                <span class="font-bold text-sm text-[#1f2a3a] flex items-center gap-1.5">📁 PDF guardados</span>
+                <button type="button" class="panel-close" aria-label="Cerrar ventana">✕</button>
+              </div>
+              <div id="documentList" class="document-list"></div>
+            </div>
           </details>
-          <details class="header-menu">
+          <details id="apiMenu" class="header-menu">
             <summary class="cursor-pointer bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
               <span>🔑</span> Conectar API
             </summary>
             <div class="header-panel">
+              <div class="panel-header">
+                <span class="font-bold text-sm text-[#1f2a3a] flex items-center gap-1.5">🔑 Conectar API (Gemini)</span>
+                <button type="button" class="panel-close" aria-label="Cerrar ventana">✕</button>
+              </div>
               <p class="api-key-state">Pega tu clave de Gemini para usar el traductor.</p>
               <label for="key" class="text-xs font-semibold text-[#4a6fa5] uppercase tracking-wide">Clave de API</label>
               <input id="key" type="password" placeholder="Clave de API" autocomplete="off" />
-              <p id="keyState" class="api-key-state"></p>
-              <button id="testKey" type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium">Probar conexión</button>
-              <button id="settings" type="button" class="bg-[#e8743b] hover:bg-[#d4622a] text-white px-3 py-2 rounded-lg text-sm font-medium transition">
-                Guardar conexión
+              <p id="keyState" class="api-key-state min-h-[1.2rem]"></p>
+              <div class="flex items-center gap-2 pt-1">
+                <button id="settings" type="button" class="flex-1 bg-[#c8963e] hover:bg-[#ad7d28] text-white py-2 px-3 rounded-lg text-sm font-semibold transition shadow-sm">
+                  Guardar conexión
+                </button>
+                <button id="testKey" type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm font-medium transition">
+                  Probar
+                </button>
+              </div>
+              <button id="clearKey" type="button" class="text-xs text-gray-500 hover:text-red-600 py-1 transition text-center underline self-center">
+                Borrar clave guardada
               </button>
-              <button id="clearKey" type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium">Borrar clave</button>
             </div>
           </details>
 
