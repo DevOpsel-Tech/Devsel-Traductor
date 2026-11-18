@@ -1,6 +1,25 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detectSourceLanguage, translateWithOpenRouter } from "../src/openrouter.js";
+import { detectSourceLanguage, translateWithOpenRouter, providers } from "../src/openrouter.js";
+
+test("cada proveedor usa su dirección y formato de autenticación", async () => {
+  for (const [id, provider] of Object.entries(providers)) {
+    const result = await translateWithOpenRouter("hello", "secret", async (url, options) => {
+      assert.equal(url, provider.endpoint);
+      const body = JSON.parse(options.body);
+      assert.equal(body.model, provider.model);
+      if (id === "anthropic") {
+        assert.equal(options.headers["x-api-key"], "secret");
+        assert.equal(options.headers["anthropic-version"], "2023-06-01");
+        assert.equal(body.messages[0].content, "hello");
+        return { ok: true, json: async () => ({ content: [{ type: "text", text: "hola" }] }) };
+      }
+      assert.equal(options.headers.Authorization, "Bearer secret");
+      return { ok: true, json: async () => ({ choices: [{ message: { content: "hola" } }] }) };
+    }, provider.endpoint, provider.model);
+    assert.equal(result, "hola");
+  }
+});
 
 test("envía el texto y la clave sin espacios a Gemini", async () => {
   const result = await translateWithOpenRouter("hello", "  test-key  ", async (url, options) => {

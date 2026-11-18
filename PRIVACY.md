@@ -5,7 +5,7 @@
 ## Datos que permanecen en el dispositivo
 
 - Los PDF abiertos y la posición de lectura se guardan en el almacenamiento local del WebView.
-- La clave de Gemini se guarda en el almacenamiento local de la aplicación sin cifrado específico. Usa **Borrar clave** antes de entregar el equipo a otra persona.
+- La clave del proveedor se mantiene en memoria durante la sesión y se elimina al cambiar de proveedor o cerrar la aplicación. Una clave de Gemini de la configuración antigua se traslada a memoria y se elimina de esa configuración al arrancar. Las copias de seguridad o datos antiguos del perfil pueden conservarla; si se ha expuesto, revócala ante el proveedor. La memoria del proceso y los datos enviados siguen siendo sensibles.
 - Puedes eliminar un PDF desde **PDF guardados**. Las traducciones superpuestas no se conservan al cerrar o recargar la aplicación.
 
 Los datos locales pueden permanecer en el dispositivo o en sus copias de seguridad después de cerrar la aplicación. La desinstalación no garantiza la eliminación de todos los datos del perfil del WebView.
@@ -14,11 +14,11 @@ Los datos locales pueden permanecer en el dispositivo o en sus copias de segurid
 
 La aplicación no tiene un servidor propio para procesar documentos. Cuando hay una clave configurada:
 
-- Para estimar el idioma, envía a Google Gemini una muestra de texto extraída de páginas del PDF.
-- Al solicitar una traducción, envía a Google Gemini el texto de la palabra o línea seleccionada.
-- La clave se envía a Google para autorizar esas solicitudes.
+- Para estimar el idioma, envía al proveedor seleccionado una muestra de texto extraída de páginas del PDF.
+- Al solicitar una traducción, envía a ese proveedor el texto de la palabra o línea seleccionada.
+- La clave se envía al proveedor seleccionado para autorizar esas solicitudes. OpenRouter puede transmitir el texto al proveedor del modelo que seleccione.
 
-Google procesa las solicitudes según sus condiciones y políticas. Revisa esas condiciones y evita usar documentos confidenciales o personales si no tienes autorización para enviarlos al proveedor.
+Cada proveedor procesa las solicitudes según sus condiciones y políticas. Revisa esas condiciones y evita usar documentos confidenciales o personales si no tienes autorización para enviarlos al proveedor.
 
 ## Analítica y contacto
 

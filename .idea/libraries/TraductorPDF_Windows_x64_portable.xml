@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="TraductorPDF-Windows-x64-portable">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/downloads/TraductorPDF-Windows-x64-portable.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

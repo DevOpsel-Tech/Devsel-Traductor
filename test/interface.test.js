@@ -11,7 +11,7 @@ test("la interfaz contiene los elementos que usa el lector", async () => {
   for (const [, id] of script.matchAll(/\$\("#([\w-]+)"\)/g)) {
     assert.match(html, new RegExp(`id=["']${id}["']`), `Falta #${id}`);
   }
-  for (const name of ["reader", "reader-area", "open-pdf", "pdf-page", "line-controls", "translation-line-button", "translation-overlay"]) {
+  for (const name of ["reader", "reader-area", "open-pdf", "pdf-page", "line-controls", "translation-line-button", "translation-overlay", "translation-dialog"]) {
     assert.ok(css.includes(`.${name}`), `Falta el estilo .${name}`);
   }
 });

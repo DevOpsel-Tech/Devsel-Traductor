@@ -1,0 +1,38 @@
+name: Publish macOS preview
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/macos-preview-publish.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified CI artifact and package DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir artifact
+          gh run download 43494095791 -n traductor-macos-latest -D artifact
+          mapfile -d '' dmgs < <(find artifact -type f -name '*.dmg' -print0)
+          if [ "${#dmgs[@]}" -ne 1 ]; then
+            echo "Expected exactly one DMG, found ${#dmgs[@]}" >&2
+            exit 1
+          fi
+          mkdir package
+          cp "${dmgs[0]}" package/
+          cd package
+          zip ../TraductorPDF-macOS-Apple-silicon-prueba.zip ./*.dmg
+          cd ..
+          sha256sum TraductorPDF-macOS-Apple-silicon-prueba.zip > SHA256SUMS-macOS.txt
+      - name: Publish preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create macos-prueba-0.1.0 TraductorPDF-macOS-Apple-silicon-prueba.zip SHA256SUMS-macOS.txt --target 0c4c601cfe347c480c439dd84af0e643a35097d3 --prerelease --title "macOS Apple silicon - prueba" --notes "Compilación de prueba sin firma ni notarización. La instalación y el funcionamiento aún no se han validado en un Mac."
