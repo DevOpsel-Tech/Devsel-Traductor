@@ -427,6 +427,11 @@ document.querySelectorAll("details.header-menu > summary").forEach((summary) => 
   });
 });
 
+// Escape cierra los paneles para mejorar la navegación con teclado.
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeHeaderMenus();
+});
+
 document.addEventListener("click", (event) => {
   const closeBtn = event.target.closest(".close-panel-btn");
   if (closeBtn) {
