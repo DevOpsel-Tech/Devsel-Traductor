@@ -29,17 +29,31 @@ jobs:
       RUN_ID: ${{ github.event.workflow_run.id }}
       TAG: descargas-latest
     steps:
-      - name: Descargar artefactos Windows y Android
+      - name: Comprobar que esta compilación sigue siendo la última
+        id: latest
         shell: bash
         run: |
           set -euo pipefail
-          # Evitar que una compilación antigua sustituya la descarga más reciente.
+          # Una ejecución antigua no debe sobrescribir los instaladores más recientes.
           current_sha=$(gh api "repos/$GH_REPO/branches/main" --jq '.commit.sha')
-          test "$current_sha" = "$BUILD_SHA" || { echo "Hay un commit posterior en main"; exit 0; }
+          if [ "$current_sha" = "$BUILD_SHA" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Compilación obsoleta: no se publicará"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Descargar artefactos Windows y Android
+        if: steps.latest.outputs.publish == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # El nombre debe coincidir exactamente con build.yml (windows-latest).
           gh run download "$RUN_ID" --name traductor-windows-latest --dir windows-artifact
           gh run download "$RUN_ID" --name traductor-android-debug --dir android-artifact
 
       - name: Preparar y validar los tres descargables
+        if: steps.latest.outputs.publish == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -56,10 +70,13 @@ jobs:
           (cd publish && sha256sum *.exe *.zip *.apk > SHA256SUMS.txt)
 
       - name: Actualizar la Release de descargas estables
+        if: steps.latest.outputs.publish == 'true'
         shell: bash
         run: |
           set -euo pipefail
           # El tag y los nombres de archivo permanecen fijos; cambian los binarios.
+          # Revalidar el SHA justo antes de sustituir archivos publicados.
+          test "$(gh api "repos/$GH_REPO/branches/main" --jq '.commit.sha')" = "$BUILD_SHA" || { echo "main avanzó durante la compilación"; exit 1; }
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --target "$BUILD_SHA" --prerelease \
               --title "Descargas actuales (Windows y Android)" \
