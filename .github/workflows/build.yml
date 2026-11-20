@@ -23,6 +23,14 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run tauri build
+      - name: Empaquetar portable de Windows
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Publicar siempre el ejecutable generado por esta misma compilación.
+          $exe = 'src-tauri/target/release/traductor-pdf.exe'
+          if (-not (Test-Path $exe)) { throw "No existe el ejecutable portable" }
+          Compress-Archive -LiteralPath $exe -DestinationPath 'src-tauri/target/release/bundle/TraductorPDF-Windows-x64-portable.zip' -Force
       - uses: actions/upload-artifact@v4
         with:
           name: traductor-${{ matrix.os }}
