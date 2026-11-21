@@ -12,7 +12,7 @@ Aplicación de escritorio para leer PDF y traducir una palabra o línea sin modi
 
 Windows sin firma digital.
 
-[Android ARM64: instalador (.apk)](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases/download/android-prueba-b40cef6/TraductorPDF-Android-ARM64-prueba.apk)
+[Android ARM64: instalador (.apk)](https://github.com/DevOpsel-Tech/Devsel-Traductor/releases/download/android-actual/TraductorPDF-Android-ARM64-prueba.apk)
 
 Android con firma de depuración.
 
