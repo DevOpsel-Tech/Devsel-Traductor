@@ -1,4 +1,4 @@
-name: Publicar descargas Windows y Android actualizadas
+name: Publicar APK Android actualizada
 
 on:
   workflow_run:
@@ -10,16 +10,15 @@ permissions:
   contents: write
 
 concurrency:
-  group: descargas-estables
+  group: publicar-android
   cancel-in-progress: false
 
 jobs:
   publish:
-    # Solo se aceptan compilaciones satisfactorias de pushes a main.
+    # Android se publica independientemente de Windows y solo desde main.
     if: >-
       github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -27,59 +26,58 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
       RUN_ID: ${{ github.event.workflow_run.id }}
-      TAG: descargas-latest
+      TAG: android-actual
     steps:
-      - name: Comprobar que esta compilación sigue siendo la última
-        id: latest
+      - name: Verificar commit y trabajo Android
+        id: verify
         shell: bash
         run: |
           set -euo pipefail
-          # Una ejecución antigua no debe sobrescribir los instaladores más recientes.
+          # Las compilaciones antiguas no pueden sustituir a las nuevas.
           current_sha=$(gh api "repos/$GH_REPO/branches/main" --jq '.commit.sha')
-          if [ "$current_sha" = "$BUILD_SHA" ]; then
-            echo "publish=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Compilación obsoleta: no se publicará"
+          if [ "$current_sha" != "$BUILD_SHA" ]; then
+            echo "El código de main ha avanzado: se omite esta ejecución"
             echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          # No condicionamos Android al resultado independiente de Windows.
+          conclusion=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs?per_page=100" \
+            --jq '[.jobs[] | select(.name == "android") | .conclusion][0] // ""')
+          if [ "$conclusion" != "success" ]; then
+            echo "La compilación Android no ha finalizado correctamente: $conclusion"
+            exit 1
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
 
-      - name: Descargar artefactos Windows y Android
-        if: steps.latest.outputs.publish == 'true'
+      - name: Descargar y validar la APK
+        if: steps.verify.outputs.publish == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          # El nombre debe coincidir exactamente con build.yml (windows-latest).
-          gh run download "$RUN_ID" --name traductor-windows-latest --dir windows-artifact
           gh run download "$RUN_ID" --name traductor-android-debug --dir android-artifact
-
-      - name: Preparar y validar los tres descargables
-        if: steps.latest.outputs.publish == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
+          mapfile -d '' files < <(find android-artifact -type f -name '*.apk' -print0)
+          # No publicar si la compilación no entregó exactamente un APK válido.
+          test "${#files[@]}" -eq 1
+          test -s "${files[0]}"
           mkdir -p publish
-          mapfile -d '' setup < <(find windows-artifact -type f -iname '*.exe' -print0)
-          mapfile -d '' portable < <(find windows-artifact -type f -name 'TraductorPDF-Windows-x64-portable.zip' -print0)
-          mapfile -d '' apk < <(find android-artifact -type f -name '*.apk' -print0)
-          test "${#setup[@]}" -eq 1
-          test "${#portable[@]}" -eq 1
-          test "${#apk[@]}" -eq 1
-          cp "${setup[0]}" publish/TraductorPDF-Windows-x64-setup.exe
-          cp "${portable[0]}" publish/TraductorPDF-Windows-x64-portable.zip
-          cp "${apk[0]}" publish/TraductorPDF-Android-ARM64-prueba.apk
-          (cd publish && sha256sum *.exe *.zip *.apk > SHA256SUMS.txt)
+          cp "${files[0]}" publish/TraductorPDF-Android-ARM64-prueba.apk
+          (cd publish && sha256sum TraductorPDF-Android-ARM64-prueba.apk > SHA256SUMS-Android.txt)
 
-      - name: Actualizar la Release de descargas estables
-        if: steps.latest.outputs.publish == 'true'
+      - name: Publicar APK con enlace permanente
+        if: steps.verify.outputs.publish == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          # El tag y los nombres de archivo permanecen fijos; cambian los binarios.
-          # Revalidar el SHA justo antes de sustituir archivos publicados.
-          test "$(gh api "repos/$GH_REPO/branches/main" --jq '.commit.sha')" = "$BUILD_SHA" || { echo "main avanzó durante la compilación"; exit 1; }
+          # Revalidar main antes de cambiar una descarga que ya existe.
+          test "$(gh api "repos/$GH_REPO/branches/main" --jq '.commit.sha')" = "$BUILD_SHA"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --target "$BUILD_SHA" --prerelease \
-              --title "Descargas actuales (Windows y Android)" \
-              --notes "Compilaciones de prueba actualizadas desde main. Windows sin firma digital y Android con firma de depuración. Validar instalación en dispositivos reales."
+              --title "Android: compilación actual" \
+              --notes "APK ARM64 de depuración. Código fuente: $BUILD_SHA. No validada en un dispositivo."
           fi
           gh release upload "$TAG" publish/* --clobber
+          gh release edit "$TAG" --notes "APK ARM64 de depuración. Código fuente: $BUILD_SHA. No validada en un dispositivo."
+          # Comprobar que GitHub registra ambos archivos antes de dar por buena la publicación.
+          assets=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          grep -Fxq 'TraductorPDF-Android-ARM64-prueba.apk' <<< "$assets"
+          grep -Fxq 'SHA256SUMS-Android.txt' <<< "$assets"
