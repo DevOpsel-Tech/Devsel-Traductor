@@ -39,6 +39,12 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
+    # La APK se publica desde el mismo trabajo que la compila, sin depender de otro workflow.
+    permissions:
+      contents: write
+    concurrency:
+      group: android-main-release
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -66,3 +72,42 @@ jobs:
           name: traductor-android-debug
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
+
+      - name: Publicar APK Android validada
+        # En PR solo se comprueba la compilación, nunca se publica.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Una ejecución antigua no debe sobrescribir el APK más reciente.
+          current_sha=$(gh api "repos/$GH_REPO/branches/main" --jq '.commit.sha')
+          if [ "$current_sha" != "$BUILD_SHA" ]; then
+            echo "Se omite publicación: main avanzó durante la compilación"
+            exit 0
+          fi
+
+          mapfile -d '' apks < <(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' -print0)
+          test "${#apks[@]}" -eq 1
+          test -s "${apks[0]}"
+          mkdir -p android-release
+          cp "${apks[0]}" android-release/TraductorPDF-Android-ARM64-prueba.apk
+          (cd android-release && sha256sum TraductorPDF-Android-ARM64-prueba.apk > SHA256SUMS-Android.txt)
+
+          # Usar un nombre estable para que el README pueda enlazar siempre a la versión actual.
+          tag=android-actual
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$BUILD_SHA" --prerelease \
+              --title "Android: compilación actual" \
+              --notes "APK ARM64 de depuración. Código fuente: $BUILD_SHA. Pendiente de validar en dispositivo."
+          fi
+
+          gh release upload "$tag" android-release/* --clobber
+          gh release edit "$tag" --target "$BUILD_SHA" \
+            --notes "APK ARM64 de depuración. Código fuente: $BUILD_SHA. Pendiente de validar en dispositivo."
+          # Comprobar que el archivo está registrado como recurso de la release.
+          gh release view "$tag" --json assets --jq '.assets[].name' |
+            grep -Fxq 'TraductorPDF-Android-ARM64-prueba.apk'
