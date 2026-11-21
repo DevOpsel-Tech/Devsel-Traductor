@@ -74,8 +74,8 @@ jobs:
           if-no-files-found: error
 
       - name: Publicar APK Android validada
-        # En PR solo se comprueba la compilación, nunca se publica.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # En PR se valida la compilación; solo los push y lanzamientos manuales de main publican.
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
